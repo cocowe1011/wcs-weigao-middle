@@ -1,8 +1,6 @@
 package com.middle.wcs.order.service;
 
-import com.middle.wcs.order.entity.dto.OrderInfoPageDTO;
 import com.middle.wcs.order.entity.po.OrderInfo;
-import com.github.pagehelper.PageInfo;
 import java.util.List;
 
 /**
@@ -34,19 +32,6 @@ public interface OrderInfoService {
      * @return 订单信息
      */
     OrderInfo getOrderInfoById(Long id);
-    
-    /**
-     * 根据条件查询订单列表
-     *
-     * @return 订单列表
-     */
-    List<OrderInfo> queryOrderList();
-
-    PageInfo<OrderInfo> queryHistoryOrderList(OrderInfoPageDTO dto);
-
-    OrderInfo getNowRunningOrder();
-
-    OrderInfo getOrderInfoByBatchId(Long batchId);
 
     List<OrderInfo> selectByList(OrderInfo dto);
 }

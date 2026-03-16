@@ -1,7 +1,6 @@
 package com.middle.wcs.order.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.middle.wcs.order.entity.dto.OrderInfoPageDTO;
 import org.apache.ibatis.annotations.Mapper;
 import com.middle.wcs.order.entity.po.OrderInfo;
 
@@ -15,5 +14,4 @@ import java.util.List;
  */
 @Mapper
 public interface OrderInfoMapper extends BaseMapper<OrderInfo> {
-    List<OrderInfo> queryHistoryOrderList(OrderInfoPageDTO dto);
 }
