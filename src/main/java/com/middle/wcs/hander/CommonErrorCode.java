@@ -39,6 +39,10 @@ public enum CommonErrorCode implements IErrorCode {
      * 密码错误次数过多
      */
     PASSWORD_ERROR_TOO_MANY("0006", "密码错误次数过多，您的账号已被锁定，请联系管理员解锁"),
+    /**
+     * 已有批次正在执行
+     */
+    BATCH_ALREADY_EXECUTING("0007", "已有批次正在执行，请等待完成后再确认新批次"),
     ;
     private String code;
     private String msg;

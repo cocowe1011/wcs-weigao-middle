@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.middle.wcs.produce.dao.ProduceGoodsMapper">
+
+    <resultMap type="com.middle.wcs.produce.entity.po.ProduceGoods" id="ProduceGoodsMap">
+        <id     property="id"           column="id"            jdbcType="BIGINT"/>
+        <result property="batchId"      column="batch_id"      jdbcType="BIGINT"/>
+        <result property="palletId"     column="pallet_id"     jdbcType="BIGINT"/>
+        <result property="uid"          column="uid"           jdbcType="VARCHAR"/>
+        <result property="productName"  column="product_name"  jdbcType="VARCHAR"/>
+        <result property="spec"         column="spec"          jdbcType="VARCHAR"/>
+        <result property="remark"       column="remark"        jdbcType="VARCHAR"/>
+        <result property="scanStatus"   column="scan_status"   jdbcType="CHAR"/>
+        <result property="scanTime"     column="scan_time"     jdbcType="TIMESTAMP"/>
+        <result property="scanLocation" column="scan_location" jdbcType="VARCHAR"/>
+        <result property="invalidFlag"  column="invalid_flag"  jdbcType="CHAR"/>
+        <result property="createdAt"    column="created_at"    jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectByUid" resultMap="ProduceGoodsMap">
+        SELECT id, batch_id, pallet_id, uid, product_name, spec, remark,
+               scan_status, scan_time, scan_location, invalid_flag, created_at
+        FROM dbo.produce_goods
+        WHERE uid = #{uid}
+          AND invalid_flag = '0'
+    </select>
+
+    <select id="selectByPalletId" resultMap="ProduceGoodsMap">
+        SELECT id, batch_id, pallet_id, uid, product_name, spec, remark,
+               scan_status, scan_time, scan_location, invalid_flag, created_at
+        FROM dbo.produce_goods
+        WHERE pallet_id = #{palletId}
+          AND invalid_flag = '0'
+        ORDER BY id ASC
+    </select>
+
+    <!-- 扫码回写：scan_status=1，scan_location/scan_time 覆盖更新 -->
+    <update id="markScanned">
+        UPDATE dbo.produce_goods
+        SET scan_status   = '1',
+            scan_location = #{scanLocation},
+            scan_time     = SYSDATETIME()
+        WHERE uid          = #{uid}
+          AND invalid_flag = '0'
+    </update>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO dbo.produce_goods
+            (batch_id, pallet_id, uid, product_name, spec, remark, scan_status, invalid_flag, created_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.batchId}, #{item.palletId}, #{item.uid}, #{item.productName},
+             #{item.spec}, #{item.remark}, '0', '0', SYSDATETIME())
+        </foreach>
+    </insert>
+
+</mapper>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.middle.wcs.produce.dao.ProduceBatchDestinationMapper">
+
+    <resultMap type="com.middle.wcs.produce.entity.po.ProduceBatchDestination" id="ProduceBatchDestinationMap">
+        <id     property="id"              column="id"               jdbcType="BIGINT"/>
+        <result property="batchId"         column="batch_id"         jdbcType="BIGINT"/>
+        <result property="destinationCode" column="destination_code" jdbcType="VARCHAR"/>
+        <result property="status"          column="status"           jdbcType="CHAR"/>
+        <result property="setTime"         column="set_time"         jdbcType="TIMESTAMP"/>
+        <result property="cancelTime"      column="cancel_time"      jdbcType="TIMESTAMP"/>
+        <result property="invalidFlag"     column="invalid_flag"     jdbcType="CHAR"/>
+        <result property="createdAt"       column="created_at"       jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectActiveByBatchId" resultMap="ProduceBatchDestinationMap">
+        SELECT TOP 1 id, batch_id, destination_code, status, set_time, cancel_time, invalid_flag, created_at
+        FROM dbo.produce_batch_destination
+        WHERE batch_id = #{batchId}
+          AND status = '0'
+          AND invalid_flag = '0'
+        ORDER BY id DESC
+    </select>
+
+</mapper>

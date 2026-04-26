@@ -1,0 +1,184 @@
+---
+description: 后端工程规范与代码风格（架构分层、事务、接口、异常与日志）
+globs: "**/*.java"
+alwaysApply: false
+---
+
+# 后端工程规范与代码风格
+
+本文档从当前项目代码中提取的纯技术向规范，不涉及具体业务逻辑。
+
+---
+
+## 一、架构分层
+
+### 1.1 分层结构
+
+| 层级 | 包路径 | 命名规范 | 职责 |
+|-----|--------|----------|------|
+| Controller | `*.controller` | `*Controller` | 接收请求、参数校验、调用 Service、返回 `ResponseResult` |
+| Service | `*.service`（接口）+ `*.service.impl`（实现） | `*Service` / `*ServiceImpl` | 业务逻辑、事务控制、调用 Mapper |
+| DAO/Mapper | `*.dao` | `*Mapper` | 数据访问，继承 `BaseMapper<T>` |
+
+### 1.2 调用边界
+
+- **Controller → Service**：Controller 只调用 Service 接口，不直接访问 Mapper
+- **Service → Mapper**：Service 实现类通过 `@Resource` 注入 Mapper，执行数据库操作
+- **Controller 不处理业务**：仅做参数接收与 `ResponseResult.success(service.xxx())` 封装
+
+### 1.3 依赖注入
+
+```java
+// ✅ 使用 @Resource 注入
+@Resource
+private OrderInfoService orderInfoService;
+
+@Resource
+private OrderInfoMapper orderInfoMapper;
+```
+
+### 1.4 包与类命名
+
+- 实体：`entity.po.*`（持久化对象）、`entity.*`（DTO 等）
+- 控制器路径：`/模块名`，如 `/order_info`、`/userInfo`、`/login`
+- Mapper 接口：使用 `@Mapper` 注解，继承 `com.baomidou.mybatisplus.core.mapper.BaseMapper<T>`
+
+---
+
+## 二、数据库与事务
+
+### 2.1 事务声明方式
+
+使用 Spring 声明式事务，**不**手动开启/提交/回滚：
+
+```java
+// ✅ 默认事务：在需要事务的 Service 方法上添加
+@Transactional
+public UserInfo login(LoginDTO loginDTO) {
+    // ...
+}
+
+// ✅ 独立新事务：需要与主事务隔离时使用
+@Transactional(propagation = Propagation.REQUIRES_NEW)
+public int updateLoginFailCount(String userCode) {
+    // 此方法在独立事务中执行，主事务回滚不影响此处提交
+}
+```
+
+### 2.2 事务使用原则
+
+- 涉及多表/多步写操作的方法加 `@Transactional`
+- 需要与主事务隔离的子操作使用 `Propagation.REQUIRES_NEW`
+- 单表简单 CRUD 可不加事务（依赖 MyBatis-Plus 默认行为）
+
+---
+
+## 三、接口规范
+
+### 3.1 统一响应结构
+
+所有接口返回 `ResponseResult<T>`：
+
+```java
+// 成功
+ResponseResult.success(data);
+ResponseResult.success();  // 无数据
+
+// 失败（通常由全局异常处理返回）
+ResponseResult.fail(data);
+ResponseResult.fail();
+```
+
+### 3.2 ResponseResult 结构
+
+| 字段 | 类型 | 说明 |
+|-----|------|------|
+| code | String | 状态码，成功 "200"，失败 "201" |
+| message | String | 提示信息 |
+| data | T | 业务数据 |
+
+### 3.3 错误码封装
+
+- **通用状态**：`ResultCodeEnum`（SUCCESS "200"、FAIL "201"）
+- **业务错误码**：实现 `IErrorCode` 接口的枚举（如 `CommonErrorCode`）
+- **错误码格式**：`prefix` + `code`，如 `common` + `0001`
+
+```java
+// 抛出业务异常
+throw BusinessException.build(CommonErrorCode.NOT_EXITS_USER_CODE);
+throw BusinessException.build(CommonErrorCode.PASSWORD_ERROR_LIMIT, String.valueOf(remainingChances));
+```
+
+### 3.4 接口风格
+
+- REST 风格：`@GetMapping`、`@PostMapping`、`@DeleteMapping`、`@RequestMapping`
+- 路径：小驼峰或下划线，如 `/getOrderInfoById`、`/order_info`
+- 文档：使用 Swagger/Knife4j，`@Api`、`@ApiOperation`、`@ApiParam`
+
+---
+
+## 四、异常与日志
+
+### 4.1 全局异常处理
+
+使用 `@RestControllerAdvice` + `@ExceptionHandler`：
+
+```java
+@RestControllerAdvice
+public class ExceptionAdvice {
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseResult handleBusinessException(HttpServletRequest request, BusinessException e) {
+        log.warn("业务异常(BusinessException),{}", e);
+        // 返回 code、message
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseResult handleException(HttpServletRequest request, Exception e) {
+        // 优先解析嵌套的 BusinessException
+        // 其他异常记录完整堆栈
+        log.error("通用异常stack info={}", getExceptionStack(e));
+    }
+}
+```
+
+### 4.2 业务异常
+
+- 业务校验失败使用 `BusinessException`，由全局异常处理统一返回
+- 构造方式：`BusinessException.build(IErrorCode, params...)`
+- 支持消息占位符 `$1`、`$2` 等
+
+### 4.3 日志规范
+
+- 使用 Lombok `@Slf4j`，通过 `log.info`、`log.warn`、`log.error` 输出
+- **业务异常**：`log.warn`
+- **系统异常/内存溢出**：`log.error`，并记录堆栈
+- **关键流程**：`log.info`，使用占位符 `{}`
+
+```java
+// ✅ 使用占位符
+log.info("用户 {} 当前失败次数: {}, 更新后: {}", userCode, currentFailCount, newFailCount);
+log.warn("用户 {} 登录失败次数达到3次，账号已被锁定", userCode);
+log.error("通用异常stack info={}", getExceptionStack(e));
+```
+
+### 4.4 日志配置（logback-spring.xml）
+
+- 项目包 `com.middle.wcs`：INFO
+- DAO 包 `com.middle.wcs.*.dao`：DEBUG
+- 使用异步 Appender（ASYNC_CONSOLE、ASYNC_FILE）提升性能
+
+---
+
+## 五、其他约定
+
+### 5.1 实体与 Mapper
+
+- 实体使用 `@TableName` 指定表名
+- 主键使用 `@TableId`，Long 类型配合 `@JsonSerialize(using = ToStringSerializer.class)` 避免前端精度丢失
+- Mapper XML 放在 `resources/mybatis/模块名/` 下
+
+### 5.2 跨域与配置
+
+- 跨域在 `WebMvcConfigurer` 中统一配置
+- 健康检查等系统接口可返回 `ResponseResult` 或纯文本（如 "OK"）

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.middle.wcs.produce.dao.ProducePalletMapper">
+
+    <resultMap type="com.middle.wcs.produce.entity.po.ProducePallet" id="ProducePalletMap">
+        <id     property="id"          column="id"           jdbcType="BIGINT"/>
+        <result property="batchId"     column="batch_id"     jdbcType="BIGINT"/>
+        <result property="palletNo"    column="pallet_no"    jdbcType="VARCHAR"/>
+        <result property="trayStatus"  column="tray_status"  jdbcType="CHAR"/>
+        <result property="virtualId"             column="virtual_id"              jdbcType="VARCHAR"/>
+        <result property="loadStatus"            column="load_status"             jdbcType="CHAR"/>
+        <result property="loadTime"              column="load_time"               jdbcType="TIMESTAMP"/>
+        <result property="sendDestinationCode"   column="send_destination_code"   jdbcType="VARCHAR"/>
+        <result property="sendStatus"            column="send_status"             jdbcType="CHAR"/>
+        <result property="sendTime"              column="send_time"               jdbcType="TIMESTAMP"/>
+        <result property="invalidFlag"           column="invalid_flag"            jdbcType="CHAR"/>
+        <result property="createdAt"             column="created_at"              jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectByBatchId" resultMap="ProducePalletMap">
+        SELECT id, batch_id, pallet_no, tray_status, virtual_id, load_status, load_time,
+               send_destination_code, send_status, send_time, invalid_flag, created_at
+        FROM dbo.produce_pallet
+        WHERE batch_id = #{batchId}
+          AND invalid_flag = '0'
+        ORDER BY id ASC
+    </select>
+
+    <!-- 查询批次中第一个未发送目的地（send_status=0）且已上货（load_status=1）的托盘 -->
+    <select id="selectFirstUnsentByBatchId" resultMap="ProducePalletMap">
+        SELECT TOP 1 id, batch_id, pallet_no, tray_status, virtual_id, load_status, load_time,
+               send_destination_code, send_status, send_time, invalid_flag, created_at
+        FROM dbo.produce_pallet
+        WHERE batch_id    = #{batchId}
+          AND send_status = '0'
+          AND load_status = '1'
+          AND invalid_flag = '0'
+        ORDER BY id ASC
+    </select>
+
+    <!-- palletId + virtualId 两个条件同时定位托盘 -->
+    <select id="selectByIdAndVirtualId" resultMap="ProducePalletMap">
+        SELECT id, batch_id, pallet_no, tray_status, virtual_id, load_status, load_time,
+               send_destination_code, send_status, send_time, invalid_flag, created_at
+        FROM dbo.produce_pallet
+        WHERE id        = #{palletId}
+          AND virtual_id = #{virtualId}
+          AND invalid_flag = '0'
+    </select>
+
+    <!-- 回写托盘扫码状态 + 目的地发送信息 -->
+    <update id="sendDestination">
+        UPDATE dbo.produce_pallet
+        SET tray_status            = #{trayStatus},
+            send_destination_code  = #{sendDestinationCode},
+            send_status            = '1',
+            send_time              = SYSDATETIME()
+        WHERE id          = #{palletId}
+          AND virtual_id  = #{virtualId}
+          AND invalid_flag = '0'
+    </update>
+
+    <update id="assignVirtualId">
+        UPDATE dbo.produce_pallet
+        SET virtual_id  = #{virtualId},
+            load_status = '1',
+            load_time   = SYSDATETIME()
+        WHERE id = #{palletId}
+          AND invalid_flag = '0'
+    </update>
+
+</mapper>
