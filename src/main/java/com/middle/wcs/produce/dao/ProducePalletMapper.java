@@ -40,4 +40,10 @@ public interface ProducePalletMapper extends BaseMapper<ProducePallet> {
                         @Param("virtualId") String virtualId,
                         @Param("trayStatus") String trayStatus,
                         @Param("sendDestinationCode") String sendDestinationCode);
+
+    /**
+     * 查询批次中所有已发送目的地的托盘（send_status=1），
+     * 按 send_time DESC 排序，用于追溯后缀交替逻辑（1/2/3）
+     */
+    List<ProducePallet> selectSentByBatchIdDesc(@Param("batchId") Long batchId);
 }

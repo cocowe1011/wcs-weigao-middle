@@ -65,15 +65,51 @@ public class ProducePalletServiceImpl implements ProducePalletService {
             trayStatus = "2";
         }
 
-        // 3. 确定发送目的地值：全扫=原始编码，未全扫=编码拼"3"
-        String sendCode = "2".equals(trayStatus) ? destinationCode : (destinationCode + "3");
+        // 3. 确定目的地后缀：未全扫→3，全扫→1/2交替（3不参与交替，需向前追溯）
+        String suffix;
+        if (!"2".equals(trayStatus)) {
+            // 未全部扫描完成，后缀固定为3
+            suffix = "3";
+        } else {
+            // 全部扫描完成，根据当前批次上一个已发送目的地托盘的后缀交替
+            suffix = determineSuffixForFullScan(pallet.getBatchId());
+        }
 
-        // 4. 回写托盘（palletId + virtualId 双条件）
+        // 4. 构造发送目的地编码：原始编码 + 后缀（如 3201 + 1 = 32011）
+        String sendCode = destinationCode + suffix;
+
+        // 5. 回写托盘（palletId + virtualId 双条件）
         producePalletMapper.sendDestination(palletId, virtualId, trayStatus, sendCode);
 
-        // 5. 回查更新后数据
+        // 6. 回查更新后数据
         ProducePallet updated = producePalletMapper.selectById(palletId);
         return PalletDetailDTO.from(updated, goodsList);
+    }
+
+    /**
+     * 确定全扫状态下的后缀：1/2交替
+     * 规则：从当前批次已发送目的地托盘中，按发送时间倒序追溯，
+     * 跳过后缀3，找到最近的1或2后缀，本次取其相反值。
+     * 若无历史记录则默认为1。
+     */
+    private String determineSuffixForFullScan(Long batchId) {
+        // 直接查询当前批次所有已发送目的地的托盘，按 send_time DESC（最近的在前）
+        List<ProducePallet> sentList = producePalletMapper.selectSentByBatchIdDesc(batchId);
+        // 正序遍历（已按 send_time DESC，第一条就是最近发送的）
+        for (ProducePallet p : sentList) {
+            String code = p.getSendDestinationCode();
+            if (code != null && code.length() > 0) {
+                String lastChar = code.substring(code.length() - 1);
+                if ("1".equals(lastChar)) {
+                    return "2";
+                } else if ("2".equals(lastChar)) {
+                    return "1";
+                }
+                // 后缀为3时不参与交替，继续向前追溯
+            }
+        }
+        // 无历史记录或历史全为3，默认为1
+        return "1";
     }
 
     @Override
