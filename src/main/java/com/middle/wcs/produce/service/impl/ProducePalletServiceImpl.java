@@ -43,7 +43,7 @@ public class ProducePalletServiceImpl implements ProducePalletService {
 
     @Override
     @Transactional
-    public PalletDetailDTO sendDestination(Long palletId, String virtualId, String destinationCode) {
+    public PalletDetailDTO sendDestination(Long palletId, String virtualId, String destinationCode, List<String> barcodes) {
         // 1. palletId + virtualId 双条件定位托盘
         ProducePallet pallet = producePalletMapper.selectByIdAndVirtualId(palletId, virtualId);
         if (pallet == null) {
@@ -53,7 +53,15 @@ public class ProducePalletServiceImpl implements ProducePalletService {
             throw new RuntimeException("该托盘已发送过目的地，请勿重复发送");
         }
 
-        // 2. 汇总该托盘下所有 goods 的 scan_status
+        // 2. 更新01006扫码状态：将传入的barcodes对应的货物标记为01006已扫码（可选，PC端传）
+        // 条码不存在/已作废时不抛异常，跳过即可，最终 tray_status 不为 "2" 会走 999 分支
+        if (barcodes != null && !barcodes.isEmpty()) {
+            for (String uid : barcodes) {
+                produceGoodsMapper.markScanned(uid, "01006");
+            }
+        }
+
+        // 3. 汇总该托盘下所有 goods 的 scan_status
         List<ProduceGoods> goodsList = produceGoodsMapper.selectByPalletId(palletId);
         long scanned = goodsList.stream().filter(g -> "1".equals(g.getScanStatus())).count();
         String trayStatus;
@@ -65,18 +73,14 @@ public class ProducePalletServiceImpl implements ProducePalletService {
             trayStatus = "2";
         }
 
-        // 3. 确定目的地后缀：未全扫→3，全扫→1/2交替（3不参与交替，需向前追溯）
-        String suffix;
-        if (!"2".equals(trayStatus)) {
-            // 未全部扫描完成，后缀固定为3
-            suffix = "3";
+        // 4. 确定发送目的地编码：全扫→destinationCode+1/2后缀，非全扫→"999"（异常标记，便于查询）
+        String sendCode;
+        if ("2".equals(trayStatus)) {
+            String suffix = determineSuffixForFullScan(pallet.getBatchId());
+            sendCode = destinationCode + suffix;
         } else {
-            // 全部扫描完成，根据当前批次上一个已发送目的地托盘的后缀交替
-            suffix = determineSuffixForFullScan(pallet.getBatchId());
+            sendCode = "999";
         }
-
-        // 4. 构造发送目的地编码：原始编码 + 后缀（如 3201 + 1 = 32011）
-        String sendCode = destinationCode + suffix;
 
         // 5. 回写托盘（palletId + virtualId 双条件）
         producePalletMapper.sendDestination(palletId, virtualId, trayStatus, sendCode);
@@ -134,5 +138,84 @@ public class ProducePalletServiceImpl implements ProducePalletService {
         ProducePallet updated = producePalletMapper.selectById(palletId);
         List<ProduceGoods> goods = produceGoodsMapper.selectByPalletId(palletId);
         return PalletDetailDTO.from(updated, goods);
+    }
+
+    @Override
+    @Transactional
+    public PalletDetailDTO matchAndAssignVirtualId(Long batchId, List<String> barcodes) {
+        // 1. 校验批次是否处于运行状态
+        ProduceBatch batch = produceBatchMapper.selectById(batchId);
+        if (batch == null || (!"1".equals(batch.getStatus()) && !"2".equals(batch.getStatus()))) {
+            throw new RuntimeException("批次未处于运行状态，无法分配虚拟ID");
+        }
+
+        // 2. 根据条码匹配批次中尚未分配虚拟ID的托盘
+        ProducePallet matchedPallet = producePalletMapper.selectUnassignedByBarcodes(batchId, barcodes);
+        if (matchedPallet == null) {
+            return null;
+        }
+
+        // 3. 生成下一个虚拟ID：查询当前批次已分配的最大虚拟ID + 1
+        Integer maxVirtualId = producePalletMapper.selectMaxVirtualIdByBatchId(batchId);
+        int nextVirtualId;
+        if (maxVirtualId == null || maxVirtualId < 10000) {
+            nextVirtualId = 10000;
+        } else if (maxVirtualId >= 29999) {
+            // 超范围回绕到10000（需确认该范围内无冲突）
+            nextVirtualId = 10000;
+        } else {
+            nextVirtualId = maxVirtualId + 1;
+        }
+
+        // 4. 持久化虚拟ID到数据库
+        String virtualIdStr = String.valueOf(nextVirtualId);
+        producePalletMapper.assignVirtualId(matchedPallet.getId(), virtualIdStr);
+
+        // 5. 更新所有匹配条码的扫码状态（01002已扫码）
+        for (String uid : barcodes) {
+            produceGoodsMapper.markScanned(uid, "01002");
+        }
+
+        // 6. 回查更新后的托盘
+        ProducePallet updated = producePalletMapper.selectById(matchedPallet.getId());
+        List<ProduceGoods> goods = produceGoodsMapper.selectByPalletId(matchedPallet.getId());
+        return PalletDetailDTO.from(updated, goods);
+    }
+
+    @Override
+    @Transactional
+    public PalletDetailDTO resendDestination(Long palletId, String virtualId, String destinationCode) {
+        // 1. 定位托盘
+        ProducePallet pallet = producePalletMapper.selectByIdAndVirtualId(palletId, virtualId);
+        if (pallet == null) {
+            throw new RuntimeException("托盘不存在或 virtualId 不匹配: palletId=" + palletId);
+        }
+        // 仅允许 999 异常托盘重新发送
+        if (!"999".equals(pallet.getSendDestinationCode())) {
+            throw new RuntimeException("仅允许999异常托盘重新发送目的地");
+        }
+
+        // 2. 重新汇总该托盘下所有 goods 的 scan_status（PDA扫码复检后可能有更新）
+        List<ProduceGoods> goodsList = produceGoodsMapper.selectByPalletId(palletId);
+        long scanned = goodsList.stream().filter(g -> "1".equals(g.getScanStatus())).count();
+        String trayStatus;
+        if (scanned == 0) {
+            trayStatus = "0";
+        } else if (scanned < goodsList.size()) {
+            trayStatus = "1";
+        } else {
+            trayStatus = "2";
+        }
+
+        // 3. 计算1/2后缀
+        String suffix = determineSuffixForFullScan(pallet.getBatchId());
+        String sendCode = destinationCode + suffix;
+
+        // 4. 更新数据库
+        producePalletMapper.sendDestination(palletId, virtualId, trayStatus, sendCode);
+
+        // 5. 回查
+        ProducePallet updated = producePalletMapper.selectById(palletId);
+        return PalletDetailDTO.from(updated, goodsList);
     }
 }

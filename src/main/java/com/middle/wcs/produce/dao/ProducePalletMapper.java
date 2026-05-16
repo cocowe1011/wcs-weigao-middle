@@ -46,4 +46,16 @@ public interface ProducePalletMapper extends BaseMapper<ProducePallet> {
      * 按 send_time DESC 排序，用于追溯后缀交替逻辑（1/2/3）
      */
     List<ProducePallet> selectSentByBatchIdDesc(@Param("batchId") Long batchId);
+
+    /**
+     * 根据条码列表匹配批次中尚未分配虚拟ID的托盘
+     * 只要任一货物的uid在barcodes列表中即命中，返回第一个匹配的托盘
+     */
+    ProducePallet selectUnassignedByBarcodes(@Param("batchId") Long batchId, @Param("barcodes") List<String> barcodes);
+
+    /**
+     * 查询批次中已分配的最大虚拟ID（10000-29999范围内）
+     * 用于递增生成下一个虚拟ID
+     */
+    Integer selectMaxVirtualIdByBatchId(@Param("batchId") Long batchId);
 }
