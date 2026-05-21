@@ -183,6 +183,24 @@ public class ProducePalletServiceImpl implements ProducePalletService {
     }
 
     @Override
+    public PalletDetailDTO getByGoodsUid(String uid) {
+        // 1. 根据 UID 查找货物
+        ProduceGoods goods = produceGoodsMapper.selectByUid(uid);
+        if (goods == null) {
+            return null;
+        }
+        // 2. 根据 palletId 查找托盘
+        ProducePallet pallet = producePalletMapper.selectById(goods.getPalletId());
+        if (pallet == null) {
+            return null;
+        }
+        // 3. 根据 palletId 查找托盘下所有货物
+        List<ProduceGoods> goodsList = produceGoodsMapper.selectByPalletId(pallet.getId());
+        // 4. 返回 PalletDetailDTO
+        return PalletDetailDTO.from(pallet, goodsList);
+    }
+
+    @Override
     @Transactional
     public PalletDetailDTO resendDestination(Long palletId, String virtualId, String destinationCode) {
         // 1. 定位托盘

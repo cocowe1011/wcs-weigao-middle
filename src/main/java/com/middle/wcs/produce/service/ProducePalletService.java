@@ -55,6 +55,15 @@ public interface ProducePalletService {
     PalletDetailDTO matchAndAssignVirtualId(Long batchId, List<String> barcodes);
 
     /**
+     * 根据货物UID查询所属托盘信息（简化接口）
+     * 仅返回托盘详情（托盘基本信息 + 货物列表），不包含批次完整数据
+     *
+     * @param uid 货物唯一码
+     * @return 托盘详情 DTO，若不存在则返回 null
+     */
+    PalletDetailDTO getByGoodsUid(String uid);
+
+    /**
      * 故障托盘重新发送目的地（999托盘修正为正确目的地编码）
      * 仅允许 sendDestinationCode='999' 的托盘重新发送
      * 1. 定位托盘，校验为999异常托盘
