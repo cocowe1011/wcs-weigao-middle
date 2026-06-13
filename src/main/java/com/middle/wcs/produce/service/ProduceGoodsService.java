@@ -13,4 +13,10 @@ public interface ProduceGoodsService {
      * @param scanLocation 扫码位置（01002 或 01006）
      */
     void markScanned(String uid, String scanLocation);
+    /**
+     * 真删：按 UID 删除单条货物
+     *
+     * @param uid 货物唯一码
+     */
+    void deleteByUid(String uid);
 }

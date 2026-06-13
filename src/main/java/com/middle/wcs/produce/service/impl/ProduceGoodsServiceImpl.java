@@ -27,4 +27,12 @@ public class ProduceGoodsServiceImpl implements ProduceGoodsService {
             throw new RuntimeException("扫码更新失败: " + uid);
         }
     }
+
+    @Override
+    public void deleteByUid(String uid) {
+        int rows = produceGoodsMapper.deleteByUid(uid);
+        if (rows == 0) {
+            throw new RuntimeException("货物不存在: " + uid);
+        }
+    }
 }

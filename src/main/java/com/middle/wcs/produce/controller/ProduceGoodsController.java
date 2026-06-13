@@ -34,4 +34,17 @@ public class ProduceGoodsController {
         produceGoodsService.markScanned(uid, scanLocation);
         return ResponseResult.success();
     }
+
+    @ApiOperation("真删货物：按 UID 删除单条货物记录")
+    @PostMapping("/delete")
+    public ResponseResult<Void> deleteGoods(
+            @ApiParam(value = "包含 uid 的请求体", required = true)
+            @RequestBody Map<String, String> body) {
+        String uid = body.get("uid");
+        if (uid == null || uid.isEmpty()) {
+            return ResponseResult.fail();
+        }
+        produceGoodsService.deleteByUid(uid);
+        return ResponseResult.success();
+    }
 }

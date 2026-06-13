@@ -58,4 +58,8 @@ public interface ProducePalletMapper extends BaseMapper<ProducePallet> {
      * 用于递增生成下一个虚拟ID
      */
     Integer selectMaxVirtualIdByBatchId(@Param("batchId") Long batchId);
+    /**
+     * 真删：按ID删除托盘
+     */
+    int deletePalletById(@Param("palletId") Long palletId);
 }

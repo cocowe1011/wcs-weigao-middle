@@ -76,4 +76,11 @@ public interface ProducePalletService {
      * @return 更新后的托盘详情
      */
     PalletDetailDTO resendDestination(Long palletId, String virtualId, String destinationCode);
+
+    /**
+     * 真删托盘：删除托盘及其下属所有货物
+     *
+     * @param palletId 托盘ID
+     */
+    void deletePallet(Long palletId);
 }

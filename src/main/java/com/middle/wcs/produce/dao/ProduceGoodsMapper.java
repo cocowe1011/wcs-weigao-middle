@@ -32,4 +32,13 @@ public interface ProduceGoodsMapper extends BaseMapper<ProduceGoods> {
      * 扫码回写：将指定 uid 的货物标记为已扫码，覆盖 scan_location 和 scan_time
      */
     int markScanned(@Param("uid") String uid, @Param("scanLocation") String scanLocation);
+    /**
+     * 真删：按托盘ID删除其下所有货物
+     */
+    int deleteByPalletId(@Param("palletId") Long palletId);
+
+    /**
+     * 真删：按 UID 删除单条货物
+     */
+    int deleteByUid(@Param("uid") String uid);
 }

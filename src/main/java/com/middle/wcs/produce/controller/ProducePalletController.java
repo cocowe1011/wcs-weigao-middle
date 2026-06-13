@@ -91,4 +91,14 @@ public class ProducePalletController {
         String destinationCode = (String) body.get("destinationCode");
         return ResponseResult.success(producePalletService.resendDestination(palletId, virtualId, destinationCode));
     }
+
+    @ApiOperation("真删托盘：删除托盘及其下属所有货物")
+    @PostMapping("/delete")
+    public ResponseResult<Void> deletePallet(
+            @ApiParam(value = "包含 palletId 的请求体", required = true)
+            @RequestBody Map<String, Object> body) {
+        Long palletId = Long.parseLong(body.get("palletId").toString());
+        producePalletService.deletePallet(palletId);
+        return ResponseResult.success();
+    }
 }

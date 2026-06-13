@@ -236,4 +236,15 @@ public class ProducePalletServiceImpl implements ProducePalletService {
         ProducePallet updated = producePalletMapper.selectById(palletId);
         return PalletDetailDTO.from(updated, goodsList);
     }
+
+    @Override
+    @Transactional
+    public void deletePallet(Long palletId) {
+        // 先删托盘下属所有货物，再删托盘本身
+        produceGoodsMapper.deleteByPalletId(palletId);
+        int rows = producePalletMapper.deletePalletById(palletId);
+        if (rows == 0) {
+            throw new RuntimeException("托盘不存在: " + palletId);
+        }
+    }
 }
