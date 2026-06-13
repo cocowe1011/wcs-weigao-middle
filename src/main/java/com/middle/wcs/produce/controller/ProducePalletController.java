@@ -30,6 +30,13 @@ public class ProducePalletController {
         return ResponseResult.success(producePalletService.listByBatchId(batchId));
     }
 
+    @ApiOperation("根据货物UID查询所属托盘信息（简化接口，仅返回托盘详情）")
+    @GetMapping("/getByGoodsUid")
+    public ResponseResult<PalletDetailDTO> getByGoodsUid(
+            @ApiParam(value = "货物唯一码", required = true) @RequestParam String uid) {
+        return ResponseResult.success(producePalletService.getByGoodsUid(uid));
+    }
+
     @ApiOperation("发送目的地：前端传入已定位的托盘信息+01006扫码条码（barcodes可选，PDA端不传），后端汇总扫码状态并回写目的地")
     @PostMapping("/sendDestination")
     public ResponseResult<PalletDetailDTO> sendDestination(
