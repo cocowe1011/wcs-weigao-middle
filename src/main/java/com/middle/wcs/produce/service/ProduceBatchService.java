@@ -1,6 +1,8 @@
 package com.middle.wcs.produce.service;
 
 import com.middle.wcs.produce.entity.dto.BatchDetailDTO;
+import com.middle.wcs.produce.entity.dto.PalletDetailDTO;
+import com.middle.wcs.produce.entity.po.ProduceGoods;
 
 /**
  * 生产批次 Service 接口
@@ -44,4 +46,22 @@ public interface ProduceBatchService {
      * @param batchId 批次 ID
      */
     void cancel(Long batchId);
+
+    /**
+     * 向指定批次添加一个空托盘，托盘号自动生成
+     *
+     * @param batchId 批次 ID
+     * @return 新托盘的 PalletDetailDTO（含空货物列表）
+     */
+    PalletDetailDTO addPallet(Long batchId);
+
+    /**
+     * 向指定托盘添加一件货物（仅 UID 为真实扫码，品名/规格使用模拟数据）
+     *
+     * @param batchId  批次 ID
+     * @param palletId 托盘 ID
+     * @param uid      货物唯一码
+     * @return 添加后的 ProduceGoods
+     */
+    ProduceGoods addGoods(Long batchId, Long palletId, String uid);
 }

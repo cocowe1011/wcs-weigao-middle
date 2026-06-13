@@ -2,6 +2,8 @@ package com.middle.wcs.produce.controller;
 
 import com.middle.wcs.hander.ResponseResult;
 import com.middle.wcs.produce.entity.dto.BatchDetailDTO;
+import com.middle.wcs.produce.entity.dto.PalletDetailDTO;
+import com.middle.wcs.produce.entity.po.ProduceGoods;
 import com.middle.wcs.produce.service.ProduceBatchService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -64,5 +66,29 @@ public class ProduceBatchController {
         }
         produceBatchService.cancel(batchId);
         return ResponseResult.success();
+    }
+
+    @ApiOperation("向批次添加一个空托盘")
+    @PostMapping("/addPallet")
+    public ResponseResult<PalletDetailDTO> addPallet(
+            @ApiParam(value = "包含 batchId 的请求体", required = true) @RequestBody Map<String, Long> body) {
+        Long batchId = body.get("batchId");
+        if (batchId == null) {
+            return ResponseResult.fail();
+        }
+        return ResponseResult.success(produceBatchService.addPallet(batchId));
+    }
+
+    @ApiOperation("向托盘添加一件货物")
+    @PostMapping("/addGoods")
+    public ResponseResult<ProduceGoods> addGoods(
+            @ApiParam(value = "包含 batchId、palletId、uid 的请求体", required = true) @RequestBody Map<String, String> body) {
+        Long batchId = body.get("batchId") != null ? Long.valueOf(body.get("batchId")) : null;
+        Long palletId = body.get("palletId") != null ? Long.valueOf(body.get("palletId")) : null;
+        String uid = body.get("uid");
+        if (batchId == null || palletId == null || uid == null || uid.trim().isEmpty()) {
+            return ResponseResult.fail();
+        }
+        return ResponseResult.success(produceBatchService.addGoods(batchId, palletId, uid.trim()));
     }
 }

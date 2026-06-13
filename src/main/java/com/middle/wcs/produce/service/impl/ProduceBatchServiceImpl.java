@@ -167,4 +167,55 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
             produceBatchDestinationMapper.updateById(activeDest);
         }
     }
+
+    @Override
+    @Transactional
+    public PalletDetailDTO addPallet(Long batchId) {
+        ProduceBatch batch = produceBatchMapper.selectById(batchId);
+        if (batch == null) {
+            throw new RuntimeException("批次不存在: " + batchId);
+        }
+        // 根据批次下已有托盘数量生成托盘号
+        List<ProducePallet> existingPallets = producePalletMapper.selectByBatchId(batchId);
+        int nextNo = (existingPallets == null ? 0 : existingPallets.size()) + 1;
+        String palletNo = "TP-" + String.format("%02d", nextNo);
+
+        ProducePallet pallet = new ProducePallet();
+        pallet.setBatchId(batchId);
+        pallet.setPalletNo(palletNo);
+        pallet.setTrayStatus("0");
+        pallet.setInvalidFlag("0");
+        pallet.setCreatedAt(new Date());
+        producePalletMapper.insert(pallet);
+
+        return PalletDetailDTO.from(pallet, new ArrayList<>());
+    }
+
+    @Override
+    @Transactional
+    public ProduceGoods addGoods(Long batchId, Long palletId, String uid) {
+        // 校验批次和托盘存在
+        ProducePallet pallet = producePalletMapper.selectById(palletId);
+        if (pallet == null) {
+            throw new RuntimeException("托盘不存在: " + palletId);
+        }
+        if (!batchId.equals(pallet.getBatchId())) {
+            throw new RuntimeException("托盘不属于指定批次");
+        }
+
+        ProduceGoods goods = new ProduceGoods();
+        goods.setBatchId(batchId);
+        goods.setPalletId(palletId);
+        goods.setUid(uid);
+        // 模拟数据：品名和规格使用固定模板
+        goods.setProductName("一次性口罩");
+        goods.setSpec("1000个/箱");
+        goods.setRemark("");
+        goods.setScanStatus("0");
+        goods.setInvalidFlag("0");
+        goods.setCreatedAt(new Date());
+        produceGoodsMapper.insert(goods);
+
+        return goods;
+    }
 }
