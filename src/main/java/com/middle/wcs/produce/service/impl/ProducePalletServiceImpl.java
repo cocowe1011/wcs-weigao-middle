@@ -94,7 +94,7 @@ public class ProducePalletServiceImpl implements ProducePalletService {
      * 确定全扫状态下的后缀：1/2交替
      * 规则：从当前批次已发送目的地托盘中，按发送时间倒序追溯，
      * 跳过后缀3，找到最近的1或2后缀，本次取其相反值。
-     * 若无历史记录则默认为1。
+     * 若无历史记录则默认为2。
      */
     private String determineSuffixForFullScan(Long batchId) {
         // 直接查询当前批次所有已发送目的地的托盘，按 send_time DESC（最近的在前）
@@ -112,8 +112,8 @@ public class ProducePalletServiceImpl implements ProducePalletService {
                 // 后缀为3时不参与交替，继续向前追溯
             }
         }
-        // 无历史记录或历史全为3，默认为1
-        return "1";
+        // 无历史记录或历史全为3，默认为2（先发送xxxx2，再发送xxxx1）
+        return "2";
     }
 
     @Override
