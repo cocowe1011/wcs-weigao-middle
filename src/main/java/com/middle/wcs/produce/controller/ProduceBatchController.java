@@ -3,7 +3,9 @@ package com.middle.wcs.produce.controller;
 import com.middle.wcs.hander.ResponseResult;
 import com.middle.wcs.produce.entity.dto.BatchDetailDTO;
 import com.middle.wcs.produce.entity.dto.PalletDetailDTO;
+import com.middle.wcs.produce.entity.po.ProduceBatch;
 import com.middle.wcs.produce.entity.po.ProduceGoods;
+import com.middle.wcs.produce.entity.po.ProducePallet;
 import com.middle.wcs.produce.service.ProduceBatchService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -11,7 +13,6 @@ import io.swagger.annotations.ApiParam;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.Map;
 
 /**
  * 生产批次控制器
@@ -30,6 +31,13 @@ public class ProduceBatchController {
         return ResponseResult.success(produceBatchService.getCurrentExecuting());
     }
 
+    @ApiOperation("根据批次ID查询批次详情（批次+托盘+货物嵌套）")
+    @GetMapping("/getById")
+    public ResponseResult<BatchDetailDTO> getById(
+            @ApiParam(value = "批次ID", required = true) @RequestParam Long id) {
+        return ResponseResult.success(produceBatchService.getBatchDetailById(id));
+    }
+
     @ApiOperation("根据货物UID查询批次详情（批次+托盘+货物嵌套）")
     @GetMapping("/getByGoodsUid")
     public ResponseResult<BatchDetailDTO> getByGoodsUid(
@@ -46,49 +54,29 @@ public class ProduceBatchController {
 
     @ApiOperation("确认批次，状态更新为已确认")
     @PostMapping("/confirm")
-    public ResponseResult<Void> confirm(
-            @ApiParam(value = "包含 batchId 的请求体", required = true) @RequestBody Map<String, Long> body) {
-        Long batchId = body.get("batchId");
-        if (batchId == null) {
-            return ResponseResult.fail();
-        }
-        produceBatchService.confirm(batchId);
-        return ResponseResult.success();
+    public ResponseResult<Integer> confirm(
+            @ApiParam(value = "批次信息", required = true) @RequestBody ProduceBatch po) {
+        return ResponseResult.success(produceBatchService.confirm(po));
     }
 
     @ApiOperation("取消执行批次，状态更新为待确认")
     @PostMapping("/cancel")
-    public ResponseResult<Void> cancel(
-            @ApiParam(value = "包含 batchId 的请求体", required = true) @RequestBody Map<String, Long> body) {
-        Long batchId = body.get("batchId");
-        if (batchId == null) {
-            return ResponseResult.fail();
-        }
-        produceBatchService.cancel(batchId);
-        return ResponseResult.success();
+    public ResponseResult<Integer> cancel(
+            @ApiParam(value = "批次信息", required = true) @RequestBody ProduceBatch po) {
+        return ResponseResult.success(produceBatchService.cancel(po));
     }
 
     @ApiOperation("向批次添加一个空托盘")
     @PostMapping("/addPallet")
     public ResponseResult<PalletDetailDTO> addPallet(
-            @ApiParam(value = "包含 batchId 的请求体", required = true) @RequestBody Map<String, Long> body) {
-        Long batchId = body.get("batchId");
-        if (batchId == null) {
-            return ResponseResult.fail();
-        }
-        return ResponseResult.success(produceBatchService.addPallet(batchId));
+            @ApiParam(value = "托盘信息", required = true) @RequestBody ProducePallet po) {
+        return ResponseResult.success(produceBatchService.addPallet(po));
     }
 
     @ApiOperation("向托盘添加一件货物")
     @PostMapping("/addGoods")
     public ResponseResult<ProduceGoods> addGoods(
-            @ApiParam(value = "包含 batchId、palletId、uid 的请求体", required = true) @RequestBody Map<String, String> body) {
-        Long batchId = body.get("batchId") != null ? Long.valueOf(body.get("batchId")) : null;
-        Long palletId = body.get("palletId") != null ? Long.valueOf(body.get("palletId")) : null;
-        String uid = body.get("uid");
-        if (batchId == null || palletId == null || uid == null || uid.trim().isEmpty()) {
-            return ResponseResult.fail();
-        }
-        return ResponseResult.success(produceBatchService.addGoods(batchId, palletId, uid.trim()));
+            @ApiParam(value = "货物信息", required = true) @RequestBody ProduceGoods po) {
+        return ResponseResult.success(produceBatchService.addGoods(po));
     }
 }

@@ -95,7 +95,7 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
             producePalletMapper.insert(pallet);
             Long palletId = pallet.getId();
 
-            // 3. 插入货物
+            // 3. 插入货物（逐条插入，MyBatis-Plus自动分配雪花ID）
             List<ProduceGoods> goodsList = palletDTO.getGoods();
             if (goodsList != null && !goodsList.isEmpty()) {
                 for (ProduceGoods g : goodsList) {
@@ -104,8 +104,8 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
                     g.setScanStatus("0");
                     g.setInvalidFlag("0");
                     g.setCreatedAt(new Date());
+                    produceGoodsMapper.insert(g);
                 }
-                produceGoodsMapper.batchInsert(goodsList);
             }
 
             savedPalletDTOs.add(PalletDetailDTO.from(pallet, goodsList != null ? goodsList : new ArrayList<>()));
@@ -120,6 +120,22 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
         if (batch == null) {
             return null;
         }
+        return buildBatchDetail(batch);
+    }
+
+    @Override
+    public BatchDetailDTO getBatchDetailById(Long batchId) {
+        ProduceBatch batch = produceBatchMapper.selectById(batchId);
+        if (batch == null) {
+            return null;
+        }
+        return buildBatchDetail(batch);
+    }
+
+    /**
+     * 组装批次详情（批次 + 托盘 + 货物嵌套）
+     */
+    private BatchDetailDTO buildBatchDetail(ProduceBatch batch) {
         List<ProducePallet> pallets = producePalletMapper.selectByBatchId(batch.getId());
         List<PalletDetailDTO> palletDTOs = new ArrayList<>();
         for (ProducePallet pallet : pallets) {
@@ -130,7 +146,8 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
     }
 
     @Override
-    public void confirm(Long batchId) {
+    public Integer confirm(ProduceBatch po) {
+        Long batchId = po.getId();
         ProduceBatch batch = produceBatchMapper.selectById(batchId);
         if (batch == null) {
             throw new RuntimeException("批次不存在: " + batchId);
@@ -142,12 +159,13 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
         }
         batch.setStatus("1");
         batch.setConfirmTime(new Date());
-        produceBatchMapper.updateById(batch);
+        return produceBatchMapper.updateById(batch);
     }
 
     @Override
     @Transactional
-    public void cancel(Long batchId) {
+    public Integer cancel(ProduceBatch po) {
+        Long batchId = po.getId();
         ProduceBatch batch = produceBatchMapper.selectById(batchId);
         if (batch == null) {
             throw new RuntimeException("批次不存在: " + batchId);
@@ -157,7 +175,7 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
         }
         batch.setStatus("0");
         batch.setConfirmTime(null);
-        produceBatchMapper.updateById(batch);
+        int rows = produceBatchMapper.updateById(batch);
 
         // 同步取消该批次当前激活的目的地设置
         ProduceBatchDestination activeDest = produceBatchDestinationMapper.selectActiveByBatchId(batchId);
@@ -166,11 +184,13 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
             activeDest.setCancelTime(new Date());
             produceBatchDestinationMapper.updateById(activeDest);
         }
+        return rows;
     }
 
     @Override
     @Transactional
-    public PalletDetailDTO addPallet(Long batchId) {
+    public PalletDetailDTO addPallet(ProducePallet po) {
+        Long batchId = po.getBatchId();
         ProduceBatch batch = produceBatchMapper.selectById(batchId);
         if (batch == null) {
             throw new RuntimeException("批次不存在: " + batchId);
@@ -193,7 +213,13 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
 
     @Override
     @Transactional
-    public ProduceGoods addGoods(Long batchId, Long palletId, String uid) {
+    public ProduceGoods addGoods(ProduceGoods po) {
+        Long batchId = po.getBatchId();
+        Long palletId = po.getPalletId();
+        String uid = po.getUid() != null ? po.getUid().trim() : null;
+        if (uid == null || uid.isEmpty()) {
+            throw new RuntimeException("货物UID不能为空");
+        }
         // 校验批次和托盘存在
         ProducePallet pallet = producePalletMapper.selectById(palletId);
         if (pallet == null) {

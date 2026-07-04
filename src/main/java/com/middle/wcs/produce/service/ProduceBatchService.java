@@ -2,7 +2,9 @@ package com.middle.wcs.produce.service;
 
 import com.middle.wcs.produce.entity.dto.BatchDetailDTO;
 import com.middle.wcs.produce.entity.dto.PalletDetailDTO;
+import com.middle.wcs.produce.entity.po.ProduceBatch;
 import com.middle.wcs.produce.entity.po.ProduceGoods;
+import com.middle.wcs.produce.entity.po.ProducePallet;
 
 /**
  * 生产批次 Service 接口
@@ -33,35 +35,41 @@ public interface ProduceBatchService {
     BatchDetailDTO getCurrentExecuting();
 
     /**
+     * 根据批次ID查询批次详情（批次 + 托盘 + 货物嵌套）
+     *
+     * @param batchId 批次ID
+     * @return BatchDetailDTO，若不存在则返回 null
+     */
+    BatchDetailDTO getBatchDetailById(Long batchId);
+
+    /**
      * 确认批次，将状态更新为已确认（status=1）。
      * 若已有其他批次正在执行（status=1或2），则抛出业务异常，限定同一时间只能执行一个批次。
      *
-     * @param batchId 批次 ID
+     * @param po 批次信息
      */
-    void confirm(Long batchId);
+    Integer confirm(ProduceBatch po);
 
     /**
      * 取消执行批次，将状态从已确认/执行中（status=1或2）回退为待确认（status=0）
      *
-     * @param batchId 批次 ID
+     * @param po 批次信息
      */
-    void cancel(Long batchId);
+    Integer cancel(ProduceBatch po);
 
     /**
      * 向指定批次添加一个空托盘，托盘号自动生成
      *
-     * @param batchId 批次 ID
+     * @param po 托盘信息（需包含 batchId）
      * @return 新托盘的 PalletDetailDTO（含空货物列表）
      */
-    PalletDetailDTO addPallet(Long batchId);
+    PalletDetailDTO addPallet(ProducePallet po);
 
     /**
      * 向指定托盘添加一件货物（仅 UID 为真实扫码，品名/规格使用模拟数据）
      *
-     * @param batchId  批次 ID
-     * @param palletId 托盘 ID
-     * @param uid      货物唯一码
+     * @param po 货物信息（需包含 batchId、palletId、uid）
      * @return 添加后的 ProduceGoods
      */
-    ProduceGoods addGoods(Long batchId, Long palletId, String uid);
+    ProduceGoods addGoods(ProduceGoods po);
 }

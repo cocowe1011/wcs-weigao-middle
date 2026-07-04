@@ -3,7 +3,9 @@ package com.middle.wcs.produce.service.impl;
 import com.middle.wcs.produce.dao.ProduceBatchMapper;
 import com.middle.wcs.produce.dao.ProduceGoodsMapper;
 import com.middle.wcs.produce.dao.ProducePalletMapper;
+import com.middle.wcs.produce.entity.dto.MatchAndAssignDTO;
 import com.middle.wcs.produce.entity.dto.PalletDetailDTO;
+import com.middle.wcs.produce.entity.dto.SendDestinationDTO;
 import com.middle.wcs.produce.entity.po.ProduceBatch;
 import com.middle.wcs.produce.entity.po.ProduceGoods;
 import com.middle.wcs.produce.entity.po.ProducePallet;
@@ -43,7 +45,12 @@ public class ProducePalletServiceImpl implements ProducePalletService {
 
     @Override
     @Transactional
-    public PalletDetailDTO sendDestination(Long palletId, String virtualId, String destinationCode, List<String> barcodes) {
+    public PalletDetailDTO sendDestination(SendDestinationDTO dto) {
+        Long palletId = dto.getPalletId();
+        String virtualId = dto.getVirtualId();
+        String destinationCode = dto.getDestinationCode();
+        List<String> barcodes = dto.getBarcodes();
+        boolean skipScanCheck = Boolean.TRUE.equals(dto.getSkipScanCheck());
         // 1. palletId + virtualId 双条件定位托盘
         ProducePallet pallet = producePalletMapper.selectByIdAndVirtualId(palletId, virtualId);
         if (pallet == null) {
@@ -73,9 +80,11 @@ public class ProducePalletServiceImpl implements ProducePalletService {
             trayStatus = "2";
         }
 
-        // 4. 确定发送目的地编码：全扫→destinationCode+1/2后缀，非全扫→"999"（异常标记，便于查询）
+        // 4. 确定发送目的地编码
+        // skipScanCheck=true：跳过扫码判断，直接赋值目的地编码+1/2后缀
+        // 全扫→destinationCode+1/2后缀，非全扫→"999"（异常标记，便于查询）
         String sendCode;
-        if ("2".equals(trayStatus)) {
+        if (skipScanCheck || "2".equals(trayStatus)) {
             String suffix = determineSuffixForFullScan(pallet.getBatchId());
             sendCode = destinationCode + suffix;
         } else {
@@ -118,7 +127,12 @@ public class ProducePalletServiceImpl implements ProducePalletService {
 
     @Override
     @Transactional
-    public PalletDetailDTO assignVirtualId(Long palletId, String virtualId) {
+    public PalletDetailDTO assignVirtualId(ProducePallet po) {
+        Long palletId = po.getId();
+        String virtualId = po.getVirtualId();
+        if (virtualId == null || virtualId.isEmpty()) {
+            throw new RuntimeException("虚拟ID不能为空");
+        }
         ProducePallet pallet = producePalletMapper.selectById(palletId);
         if (pallet == null || "1".equals(pallet.getInvalidFlag())) {
             throw new RuntimeException("托盘不存在: " + palletId);
@@ -142,7 +156,12 @@ public class ProducePalletServiceImpl implements ProducePalletService {
 
     @Override
     @Transactional
-    public PalletDetailDTO matchAndAssignVirtualId(Long batchId, List<String> barcodes) {
+    public PalletDetailDTO matchAndAssignVirtualId(MatchAndAssignDTO dto) {
+        Long batchId = dto.getBatchId();
+        List<String> barcodes = dto.getBarcodes();
+        if (barcodes == null || barcodes.isEmpty()) {
+            return null;
+        }
         // 1. 校验批次是否处于运行状态
         ProduceBatch batch = produceBatchMapper.selectById(batchId);
         if (batch == null || (!"1".equals(batch.getStatus()) && !"2".equals(batch.getStatus()))) {
@@ -202,7 +221,10 @@ public class ProducePalletServiceImpl implements ProducePalletService {
 
     @Override
     @Transactional
-    public PalletDetailDTO resendDestination(Long palletId, String virtualId, String destinationCode) {
+    public PalletDetailDTO resendDestination(SendDestinationDTO dto) {
+        Long palletId = dto.getPalletId();
+        String virtualId = dto.getVirtualId();
+        String destinationCode = dto.getDestinationCode();
         // 1. 定位托盘
         ProducePallet pallet = producePalletMapper.selectByIdAndVirtualId(palletId, virtualId);
         if (pallet == null) {
@@ -239,12 +261,14 @@ public class ProducePalletServiceImpl implements ProducePalletService {
 
     @Override
     @Transactional
-    public void deletePallet(Long palletId) {
+    public Integer deletePallet(ProducePallet po) {
+        Long palletId = po.getId();
         // 先删托盘下属所有货物，再删托盘本身
         produceGoodsMapper.deleteByPalletId(palletId);
         int rows = producePalletMapper.deletePalletById(palletId);
         if (rows == 0) {
             throw new RuntimeException("托盘不存在: " + palletId);
         }
+        return rows;
     }
 }

@@ -19,16 +19,15 @@ public interface ProduceBatchDestinationService {
      * 设置目的地：关闭旧的激活记录，新建一条激活记录
      * 要求批次状态为已确认(1)或生产中(2)，否则抛出异常
      *
-     * @param batchId         批次ID
-     * @param destinationCode 目的地编码（3201~3215）
+     * @param po 目的地设置信息（需包含 batchId 和 destinationCode）
      * @return 新建的目的地记录
      */
-    ProduceBatchDestination set(Long batchId, String destinationCode);
+    ProduceBatchDestination set(ProduceBatchDestination po);
 
     /**
      * 取消当前批次的激活目的地
      *
-     * @param batchId 批次ID
+     * @param po 目的地设置信息（需包含 batchId）
      */
-    void cancel(Long batchId);
+    Integer cancel(ProduceBatchDestination po);
 }

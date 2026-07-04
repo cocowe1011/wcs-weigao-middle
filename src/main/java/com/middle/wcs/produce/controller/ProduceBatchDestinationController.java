@@ -9,7 +9,6 @@ import io.swagger.annotations.ApiParam;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.Map;
 
 /**
  * 批次目的地设置控制器
@@ -32,20 +31,14 @@ public class ProduceBatchDestinationController {
     @ApiOperation("设置目的地（覆盖旧设置，要求批次已允许生产）")
     @PostMapping("/set")
     public ResponseResult<ProduceBatchDestination> set(
-            @ApiParam(value = "包含 batchId(String) 和 destinationCode 的请求体", required = true)
-            @RequestBody Map<String, String> body) {
-        Long batchId = Long.parseLong(body.get("batchId"));
-        String destinationCode = body.get("destinationCode");
-        return ResponseResult.success(destinationService.set(batchId, destinationCode));
+            @ApiParam(value = "目的地设置信息", required = true) @RequestBody ProduceBatchDestination po) {
+        return ResponseResult.success(destinationService.set(po));
     }
 
     @ApiOperation("取消当前批次的目的地设置")
     @PostMapping("/cancel")
-    public ResponseResult<Void> cancel(
-            @ApiParam(value = "包含 batchId(String) 的请求体", required = true)
-            @RequestBody Map<String, String> body) {
-        Long batchId = Long.parseLong(body.get("batchId"));
-        destinationService.cancel(batchId);
-        return ResponseResult.success();
+    public ResponseResult<Integer> cancel(
+            @ApiParam(value = "目的地设置信息", required = true) @RequestBody ProduceBatchDestination po) {
+        return ResponseResult.success(destinationService.cancel(po));
     }
 }

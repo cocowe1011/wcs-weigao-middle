@@ -1,6 +1,7 @@
 package com.middle.wcs.produce.controller;
 
 import com.middle.wcs.hander.ResponseResult;
+import com.middle.wcs.produce.entity.po.ProduceGoods;
 import com.middle.wcs.produce.service.ProduceGoodsService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -8,7 +9,6 @@ import io.swagger.annotations.ApiParam;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.Map;
 
 /**
  * 生产货物控制器
@@ -23,28 +23,15 @@ public class ProduceGoodsController {
 
     @ApiOperation("扫码回写：将货物标记为已扫码（scan_status=1，覆盖 scan_location/scan_time）")
     @PostMapping("/markScanned")
-    public ResponseResult<Void> markScanned(
-            @ApiParam(value = "包含 uid 和 scanLocation（01002 或 01006）的请求体", required = true)
-            @RequestBody Map<String, String> body) {
-        String uid = body.get("uid");
-        String scanLocation = body.get("scanLocation");
-        if (uid == null || uid.isEmpty()) {
-            return ResponseResult.fail();
-        }
-        produceGoodsService.markScanned(uid, scanLocation);
-        return ResponseResult.success();
+    public ResponseResult<Integer> markScanned(
+            @ApiParam(value = "货物信息", required = true) @RequestBody ProduceGoods po) {
+        return ResponseResult.success(produceGoodsService.markScanned(po));
     }
 
-    @ApiOperation("真删货物：按 UID 删除单条货物记录")
+    @ApiOperation("真删货物：按主键ID删除单条货物记录")
     @PostMapping("/delete")
-    public ResponseResult<Void> deleteGoods(
-            @ApiParam(value = "包含 uid 的请求体", required = true)
-            @RequestBody Map<String, String> body) {
-        String uid = body.get("uid");
-        if (uid == null || uid.isEmpty()) {
-            return ResponseResult.fail();
-        }
-        produceGoodsService.deleteByUid(uid);
-        return ResponseResult.success();
+    public ResponseResult<Integer> deleteGoods(
+            @ApiParam(value = "货物信息", required = true) @RequestBody ProduceGoods po) {
+        return ResponseResult.success(produceGoodsService.deleteById(po));
     }
 }

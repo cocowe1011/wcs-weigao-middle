@@ -1,5 +1,7 @@
 package com.middle.wcs.produce.service;
 
+import com.middle.wcs.produce.entity.po.ProduceGoods;
+
 /**
  * 生产货物 Service 接口
  */
@@ -9,14 +11,13 @@ public interface ProduceGoodsService {
      * 扫码回写：将指定 uid 的货物标记为已扫码（scan_status=1），
      * 同时覆盖更新 scan_location 和 scan_time。
      *
-     * @param uid          货物唯一码
-     * @param scanLocation 扫码位置（01002 或 01006）
+     * @param po 货物信息（需包含 uid 和 scanLocation）
      */
-    void markScanned(String uid, String scanLocation);
+    Integer markScanned(ProduceGoods po);
     /**
-     * 真删：按 UID 删除单条货物
+     * 真删：按主键ID删除单条货物
      *
-     * @param uid 货物唯一码
+     * @param po 货物信息（需包含 id）
      */
-    void deleteByUid(String uid);
+    Integer deleteById(ProduceGoods po);
 }

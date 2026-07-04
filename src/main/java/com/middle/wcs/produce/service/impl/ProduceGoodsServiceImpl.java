@@ -17,7 +17,9 @@ public class ProduceGoodsServiceImpl implements ProduceGoodsService {
     private ProduceGoodsMapper produceGoodsMapper;
 
     @Override
-    public void markScanned(String uid, String scanLocation) {
+    public Integer markScanned(ProduceGoods po) {
+        String uid = po.getUid();
+        String scanLocation = po.getScanLocation();
         ProduceGoods goods = produceGoodsMapper.selectByUid(uid);
         if (goods == null) {
             throw new RuntimeException("货物不存在或已作废: " + uid);
@@ -26,13 +28,19 @@ public class ProduceGoodsServiceImpl implements ProduceGoodsService {
         if (rows == 0) {
             throw new RuntimeException("扫码更新失败: " + uid);
         }
+        return rows;
     }
 
     @Override
-    public void deleteByUid(String uid) {
-        int rows = produceGoodsMapper.deleteByUid(uid);
-        if (rows == 0) {
-            throw new RuntimeException("货物不存在: " + uid);
+    public Integer deleteById(ProduceGoods po) {
+        Long id = po.getId();
+        if (id == null) {
+            throw new RuntimeException("货物ID不能为空");
         }
+        int rows = produceGoodsMapper.deleteById(id);
+        if (rows == 0) {
+            throw new RuntimeException("货物不存在: " + id);
+        }
+        return rows;
     }
 }

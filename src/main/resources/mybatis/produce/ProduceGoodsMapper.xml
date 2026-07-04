@@ -44,24 +44,9 @@
           AND invalid_flag = '0'
     </update>
 
-    <insert id="batchInsert" parameterType="java.util.List">
-        INSERT INTO dbo.produce_goods
-            (batch_id, pallet_id, uid, product_name, spec, remark, scan_status, invalid_flag, created_at)
-        VALUES
-        <foreach collection="list" item="item" separator=",">
-            (#{item.batchId}, #{item.palletId}, #{item.uid}, #{item.productName},
-             #{item.spec}, #{item.remark}, '0', '0', SYSDATETIME())
-        </foreach>
-    </insert>
-
     <!-- 真删：按托盘ID删除其下所有货物 -->
     <delete id="deleteByPalletId">
         DELETE FROM dbo.produce_goods WHERE pallet_id = #{palletId}
-    </delete>
-
-    <!-- 真删：按 UID 删除单条货物 -->
-    <delete id="deleteByUid">
-        DELETE FROM dbo.produce_goods WHERE uid = #{uid}
     </delete>
 
 </mapper>

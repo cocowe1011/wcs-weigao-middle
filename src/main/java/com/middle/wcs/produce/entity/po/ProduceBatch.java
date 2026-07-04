@@ -1,6 +1,5 @@
 package com.middle.wcs.produce.entity.po;
 
-import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -17,7 +16,7 @@ import java.util.Date;
 @TableName("produce_batch")
 public class ProduceBatch {
 
-    @TableId(type = IdType.AUTO)
+    @TableId
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
 

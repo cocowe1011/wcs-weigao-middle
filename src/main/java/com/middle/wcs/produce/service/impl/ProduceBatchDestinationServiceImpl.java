@@ -30,7 +30,9 @@ public class ProduceBatchDestinationServiceImpl implements ProduceBatchDestinati
 
     @Override
     @Transactional
-    public ProduceBatchDestination set(Long batchId, String destinationCode) {
+    public ProduceBatchDestination set(ProduceBatchDestination po) {
+        Long batchId = po.getBatchId();
+        String destinationCode = po.getDestinationCode();
         ProduceBatch batch = produceBatchMapper.selectById(batchId);
         if (batch == null) {
             throw new RuntimeException("批次不存在: " + batchId);
@@ -60,14 +62,15 @@ public class ProduceBatchDestinationServiceImpl implements ProduceBatchDestinati
 
     @Override
     @Transactional
-    public void cancel(Long batchId) {
+    public Integer cancel(ProduceBatchDestination po) {
+        Long batchId = po.getBatchId();
         ProduceBatchDestination existing = destinationMapper.selectActiveByBatchId(batchId);
         if (existing == null) {
             throw new RuntimeException("当前批次没有激活的目的地设置");
         }
         existing.setStatus("1");
         existing.setCancelTime(new Date());
-        destinationMapper.updateById(existing);
+        return destinationMapper.updateById(existing);
     }
 
     private void validateDestinationCode(String code) {

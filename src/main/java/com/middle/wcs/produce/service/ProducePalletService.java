@@ -1,6 +1,9 @@
 package com.middle.wcs.produce.service;
 
+import com.middle.wcs.produce.entity.dto.MatchAndAssignDTO;
 import com.middle.wcs.produce.entity.dto.PalletDetailDTO;
+import com.middle.wcs.produce.entity.dto.SendDestinationDTO;
+import com.middle.wcs.produce.entity.po.ProducePallet;
 
 import java.util.List;
 
@@ -17,11 +20,10 @@ public interface ProducePalletService {
     /**
      * 为托盘分配虚拟ID（同步标记上货状态），要求托盘归属的批次处于运行状态
      *
-     * @param palletId  托盘ID
-     * @param virtualId 虚拟ID（PC端生成的时间戳ID）
+     * @param po 托盘信息（需包含 id 和 virtualId）
      * @return 更新后的托盘详情（含货物列表）
      */
-    PalletDetailDTO assignVirtualId(Long palletId, String virtualId);
+    PalletDetailDTO assignVirtualId(ProducePallet po);
 
     /**
      * 发送目的地：
@@ -32,14 +34,12 @@ public interface ProducePalletService {
      * 4. 非全扫抛异常（前端写999），全扫以1/2交替确定后缀
      * 5. 写入发送目的地编码（destinationCode + 后缀）
      * 6. 标记 send_status=1（已发送）
+     * skipScanCheck=true时跳过步骤3-4的扫码判断，直接赋值目的地编码+后缀
      *
-     * @param palletId        前端找到的托盘ID
-     * @param virtualId       前端找到的托盘虚拟ID（双条件校验）
-     * @param destinationCode 前端传入的当前激活目的地编码
-     * @param barcodes        01006扫码缓存的条码列表
+     * @param dto 发送目的地请求 DTO
      * @return 更新后的托盘详情
      */
-    PalletDetailDTO sendDestination(Long palletId, String virtualId, String destinationCode, List<String> barcodes);
+    PalletDetailDTO sendDestination(SendDestinationDTO dto);
 
     /**
      * 根据扫描条码匹配托盘并分配虚拟ID（原子操作）
@@ -48,11 +48,10 @@ public interface ProducePalletService {
      * 3. 匹配成功后，批量更新所有barcodes对应货物的01002扫码状态（scan_status=1）
      * 4. 匹配失败：返回null
      *
-     * @param batchId  当前批次ID
-     * @param barcodes 扫描到的条码列表
+     * @param dto 匹配分配虚拟ID请求 DTO
      * @return 匹配成功返回托盘详情，匹配失败返回null
      */
-    PalletDetailDTO matchAndAssignVirtualId(Long batchId, List<String> barcodes);
+    PalletDetailDTO matchAndAssignVirtualId(MatchAndAssignDTO dto);
 
     /**
      * 根据货物UID查询所属托盘信息（简化接口）
@@ -70,17 +69,15 @@ public interface ProducePalletService {
      * 2. 计算1/2后缀（复用全扫后缀交替逻辑）
      * 3. 更新 sendDestinationCode 为正确目的地编码
      *
-     * @param palletId        托盘ID
-     * @param virtualId       托盘虚拟ID（双条件校验）
-     * @param destinationCode 当前激活的目的地编码
+     * @param dto 重新发送目的地请求 DTO
      * @return 更新后的托盘详情
      */
-    PalletDetailDTO resendDestination(Long palletId, String virtualId, String destinationCode);
+    PalletDetailDTO resendDestination(SendDestinationDTO dto);
 
     /**
      * 真删托盘：删除托盘及其下属所有货物
      *
-     * @param palletId 托盘ID
+     * @param po 托盘信息（需包含 id）
      */
-    void deletePallet(Long palletId);
+    Integer deletePallet(ProducePallet po);
 }
