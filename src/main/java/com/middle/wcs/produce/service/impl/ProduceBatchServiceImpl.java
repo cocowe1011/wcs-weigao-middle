@@ -1,5 +1,6 @@
 package com.middle.wcs.produce.service.impl;
 
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.middle.wcs.produce.dao.ProduceBatchDestinationMapper;
 import com.middle.wcs.produce.dao.ProduceBatchMapper;
 import com.middle.wcs.produce.dao.ProduceGoodsMapper;
@@ -83,32 +84,46 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
         }
 
         List<PalletDetailDTO> savedPalletDTOs = new ArrayList<>();
+        // 汇总所有货物，最后批量插入（避免逐条 insert 的大量网络往返）
+        List<ProduceGoods> allGoods = new ArrayList<>();
+        Date now = new Date();
 
         for (PalletDetailDTO palletDTO : palletDTOs) {
             // 2. 插入托盘
             ProducePallet pallet = new ProducePallet();
             pallet.setBatchId(batchId);
             pallet.setPalletNo(palletDTO.getPalletNo() != null ? palletDTO.getPalletNo() : "");
+            pallet.setToWarehouse(palletDTO.getToWarehouse());
             pallet.setTrayStatus("0");
             pallet.setInvalidFlag("0");
-            pallet.setCreatedAt(new Date());
+            pallet.setCreatedAt(now);
             producePalletMapper.insert(pallet);
             Long palletId = pallet.getId();
 
-            // 3. 插入货物（逐条插入，MyBatis-Plus自动分配雪花ID）
+            // 3. 组装货物（手动分配雪花ID，收集后统一批量插入）
             List<ProduceGoods> goodsList = palletDTO.getGoods();
             if (goodsList != null && !goodsList.isEmpty()) {
                 for (ProduceGoods g : goodsList) {
+                    g.setId(IdWorker.getId());
                     g.setBatchId(batchId);
                     g.setPalletId(palletId);
                     g.setScanStatus("0");
                     g.setInvalidFlag("0");
-                    g.setCreatedAt(new Date());
-                    produceGoodsMapper.insert(g);
+                    // created_at 由数据库默认 SYSDATETIME() 生成，这里不赋值
+                    allGoods.add(g);
                 }
             }
 
             savedPalletDTOs.add(PalletDetailDTO.from(pallet, goodsList != null ? goodsList : new ArrayList<>()));
+        }
+
+        // 4. 批量插入货物（分片，规避 SQL Server 单语句参数上限）
+        if (!allGoods.isEmpty()) {
+            final int chunkSize = 100;
+            for (int from = 0; from < allGoods.size(); from += chunkSize) {
+                int to = Math.min(from + chunkSize, allGoods.size());
+                produceGoodsMapper.insertBatch(allGoods.subList(from, to));
+            }
         }
 
         return BatchDetailDTO.of(batch, savedPalletDTOs);

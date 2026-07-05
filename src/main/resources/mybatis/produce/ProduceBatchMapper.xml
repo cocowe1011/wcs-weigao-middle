@@ -5,6 +5,10 @@
     <resultMap type="com.middle.wcs.produce.entity.po.ProduceBatch" id="ProduceBatchMap">
         <id     property="id"          column="id"           jdbcType="BIGINT"/>
         <result property="batchNo"     column="batch_no"     jdbcType="VARCHAR"/>
+        <result property="sterilizationOrderNo" column="sterilization_order_no" jdbcType="VARCHAR"/>
+        <result property="palletQuantity"       column="pallet_quantity"        jdbcType="INTEGER"/>
+        <result property="sterilizerNameCode"   column="sterilizer_name_code"   jdbcType="VARCHAR"/>
+        <result property="processPlanNameCode"  column="process_plan_name_code" jdbcType="VARCHAR"/>
         <result property="status"      column="status"       jdbcType="CHAR"/>
         <result property="invalidFlag" column="invalid_flag" jdbcType="CHAR"/>
         <result property="confirmTime" column="confirm_time" jdbcType="TIMESTAMP"/>
@@ -13,7 +17,8 @@
     </resultMap>
 
     <select id="selectCurrentExecuting" resultMap="ProduceBatchMap">
-        SELECT TOP 1 id, batch_no, status, invalid_flag, confirm_time, finish_time, created_at
+        SELECT TOP 1 id, batch_no, sterilization_order_no, pallet_quantity, sterilizer_name_code,
+               process_plan_name_code, status, invalid_flag, confirm_time, finish_time, created_at
         FROM dbo.produce_batch
         WHERE invalid_flag = '0'
           AND status IN ('1', '2')

@@ -23,6 +23,18 @@ public class ProduceBatch {
     /** 批次号 */
     private String batchNo;
 
+    /** MSE灭菌单号 */
+    private String sterilizationOrderNo;
+
+    /** MSE托盘数量 */
+    private Integer palletQuantity;
+
+    /** MSE灭菌柜名称/编码 */
+    private String sterilizerNameCode;
+
+    /** MSE工艺方案名称/编码 */
+    private String processPlanNameCode;
+
     /** 状态 0待确认 1已确认 2生产中 3完成 */
     private String status;
 

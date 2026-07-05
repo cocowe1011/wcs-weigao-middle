@@ -7,8 +7,12 @@
         <result property="batchId"      column="batch_id"      jdbcType="BIGINT"/>
         <result property="palletId"     column="pallet_id"     jdbcType="BIGINT"/>
         <result property="uid"          column="uid"           jdbcType="VARCHAR"/>
+        <result property="udi"          column="udi"           jdbcType="VARCHAR"/>
         <result property="productName"  column="product_name"  jdbcType="VARCHAR"/>
         <result property="spec"         column="spec"          jdbcType="VARCHAR"/>
+        <result property="productCode"           column="product_code"            jdbcType="VARCHAR"/>
+        <result property="productionBatchNumber" column="production_batch_number"  jdbcType="VARCHAR"/>
+        <result property="productionDate"        column="production_date"          jdbcType="VARCHAR"/>
         <result property="remark"       column="remark"        jdbcType="VARCHAR"/>
         <result property="scanStatus"   column="scan_status"   jdbcType="CHAR"/>
         <result property="scanTime"     column="scan_time"     jdbcType="TIMESTAMP"/>
@@ -18,21 +22,51 @@
     </resultMap>
 
     <select id="selectByUid" resultMap="ProduceGoodsMap">
-        SELECT id, batch_id, pallet_id, uid, product_name, spec, remark,
-               scan_status, scan_time, scan_location, invalid_flag, created_at
+        SELECT id, batch_id, pallet_id, uid, udi, product_name, spec, product_code, production_batch_number,
+               production_date, remark, scan_status, scan_time, scan_location, invalid_flag, created_at
         FROM dbo.produce_goods
         WHERE uid = #{uid}
           AND invalid_flag = '0'
     </select>
 
     <select id="selectByPalletId" resultMap="ProduceGoodsMap">
-        SELECT id, batch_id, pallet_id, uid, product_name, spec, remark,
-               scan_status, scan_time, scan_location, invalid_flag, created_at
+        SELECT id, batch_id, pallet_id, uid, udi, product_name, spec, product_code, production_batch_number,
+               production_date, remark, scan_status, scan_time, scan_location, invalid_flag, created_at
         FROM dbo.produce_goods
         WHERE pallet_id = #{palletId}
           AND invalid_flag = '0'
         ORDER BY id ASC
     </select>
+
+    <select id="selectByPalletIds" resultMap="ProduceGoodsMap">
+        SELECT id, batch_id, pallet_id, uid, udi, product_name, spec, product_code, production_batch_number,
+               production_date, remark, scan_status, scan_time, scan_location, invalid_flag, created_at
+        FROM dbo.produce_goods
+        WHERE invalid_flag = '0'
+          AND pallet_id IN
+        <foreach collection="palletIds" item="pid" open="(" separator="," close=")">
+            #{pid}
+        </foreach>
+        ORDER BY pallet_id ASC, id ASC
+    </select>
+
+    <!-- 批量插入货物（单条SQL多行），需提前为每条设置 id。
+         仅 created_at 省略（库表默认 SYSDATETIME()），其余列均显式插入；
+         可空列显式指定 jdbcType（尤其 scan_time=TIMESTAMP），避免多行 INSERT 中 null 参数被推断为 varbinary 的类型转换报错 -->
+    <insert id="insertBatch">
+        INSERT INTO dbo.produce_goods
+        (id, batch_id, pallet_id, uid, udi, product_name, spec, product_code,
+         production_batch_number, production_date, remark, scan_status, scan_location, scan_time, invalid_flag)
+        VALUES
+        <foreach collection="list" item="g" separator=",">
+            (#{g.id}, #{g.batchId}, #{g.palletId},
+             #{g.uid,jdbcType=VARCHAR}, #{g.udi,jdbcType=VARCHAR}, #{g.productName,jdbcType=VARCHAR},
+             #{g.spec,jdbcType=VARCHAR}, #{g.productCode,jdbcType=VARCHAR},
+             #{g.productionBatchNumber,jdbcType=VARCHAR}, #{g.productionDate,jdbcType=VARCHAR},
+             #{g.remark,jdbcType=VARCHAR}, #{g.scanStatus,jdbcType=CHAR},
+             #{g.scanLocation,jdbcType=VARCHAR}, #{g.scanTime,jdbcType=TIMESTAMP}, #{g.invalidFlag,jdbcType=CHAR})
+        </foreach>
+    </insert>
 
     <!-- 扫码回写：scan_status=1，scan_location/scan_time 覆盖更新 -->
     <update id="markScanned">

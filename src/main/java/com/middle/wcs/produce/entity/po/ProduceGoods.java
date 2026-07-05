@@ -26,14 +26,26 @@ public class ProduceGoods {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long palletId;
 
-    /** 货物唯一码 */
+    /** 货物唯一码（去括号后的条码，用于扫码匹配） */
     private String uid;
+
+    /** MSE原始UDI码（GS1带括号原文，用于对外提供） */
+    private String udi;
 
     /** 品名 */
     private String productName;
 
     /** 规格 */
     private String spec;
+
+    /** MSE产品货号 */
+    private String productCode;
+
+    /** MSE生产批次号 */
+    private String productionBatchNumber;
+
+    /** MSE生产日期 */
+    private String productionDate;
 
     /** 备注 */
     private String remark;

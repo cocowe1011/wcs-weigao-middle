@@ -231,3 +231,41 @@ EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'上货时间',
 EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'发送的目的地编码', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'produce_pallet', @level2type=N'COLUMN', @level2name=N'send_destination_code';
 EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'是否已发送目的地 0-未发送 1-已发送', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'produce_pallet', @level2type=N'COLUMN', @level2name=N'send_status';
 EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'发送目的地时间', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'produce_pallet', @level2type=N'COLUMN', @level2name=N'send_time';
+
+-- =============================================
+-- MSE 订单查询新增字段（幂等：列不存在时才添加）
+-- produce_batch: 灭菌单号/托盘数/灭菌柜编码/工艺方案
+-- produce_pallet: 是否入库（MSE托盘编码直接存 pallet_no）
+-- produce_goods: 产品货号/生产批次号/生产日期
+-- =============================================
+
+IF COL_LENGTH('dbo.produce_batch', 'sterilization_order_no') IS NULL
+    ALTER TABLE dbo.produce_batch ADD sterilization_order_no NVARCHAR(64) NULL;
+IF COL_LENGTH('dbo.produce_batch', 'pallet_quantity') IS NULL
+    ALTER TABLE dbo.produce_batch ADD pallet_quantity INT NULL;
+IF COL_LENGTH('dbo.produce_batch', 'sterilizer_name_code') IS NULL
+    ALTER TABLE dbo.produce_batch ADD sterilizer_name_code NVARCHAR(32) NULL;
+IF COL_LENGTH('dbo.produce_batch', 'process_plan_name_code') IS NULL
+    ALTER TABLE dbo.produce_batch ADD process_plan_name_code NVARCHAR(64) NULL;
+
+IF COL_LENGTH('dbo.produce_pallet', 'to_warehouse') IS NULL
+    ALTER TABLE dbo.produce_pallet ADD to_warehouse CHAR(1) NULL;
+
+IF COL_LENGTH('dbo.produce_goods', 'udi') IS NULL
+    ALTER TABLE dbo.produce_goods ADD udi NVARCHAR(128) NULL;
+IF COL_LENGTH('dbo.produce_goods', 'product_code') IS NULL
+    ALTER TABLE dbo.produce_goods ADD product_code NVARCHAR(64) NULL;
+IF COL_LENGTH('dbo.produce_goods', 'production_batch_number') IS NULL
+    ALTER TABLE dbo.produce_goods ADD production_batch_number NVARCHAR(64) NULL;
+IF COL_LENGTH('dbo.produce_goods', 'production_date') IS NULL
+    ALTER TABLE dbo.produce_goods ADD production_date NVARCHAR(32) NULL;
+
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'MSE灭菌单号', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'produce_batch', @level2type=N'COLUMN', @level2name=N'sterilization_order_no';
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'MSE托盘数量', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'produce_batch', @level2type=N'COLUMN', @level2name=N'pallet_quantity';
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'MSE灭菌柜名称/编码', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'produce_batch', @level2type=N'COLUMN', @level2name=N'sterilizer_name_code';
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'MSE工艺方案名称/编码', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'produce_batch', @level2type=N'COLUMN', @level2name=N'process_plan_name_code';
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'MSE是否入库 0否 1是', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'produce_pallet', @level2type=N'COLUMN', @level2name=N'to_warehouse';
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'MSE原始UDI码(GS1带括号原文)', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'produce_goods', @level2type=N'COLUMN', @level2name=N'udi';
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'MSE产品货号', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'produce_goods', @level2type=N'COLUMN', @level2name=N'product_code';
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'MSE生产批次号', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'produce_goods', @level2type=N'COLUMN', @level2name=N'production_batch_number';
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'MSE生产日期', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'produce_goods', @level2type=N'COLUMN', @level2name=N'production_date';

@@ -1,6 +1,7 @@
 package com.middle.wcs.hander;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -83,6 +84,15 @@ public class ExceptionAdvice {
         return result;
     }
 
+
+    /**
+     * 处理客户端提前断开连接（Broken pipe）。
+     * 连接已断开，响应无法再写回，因此只记录简要日志、不返回响应体，避免二次写异常与刷大堆栈。
+     */
+    @ExceptionHandler(value = ClientAbortException.class)
+    public void handleClientAbort(ClientAbortException e) {
+        log.warn("客户端连接已断开(Broken pipe)，忽略该请求响应: {}", e.getMessage());
+    }
 
     /**
      * 处理异常

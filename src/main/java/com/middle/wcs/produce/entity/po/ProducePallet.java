@@ -23,8 +23,11 @@ public class ProducePallet {
     @JsonSerialize(using = ToStringSerializer.class)
     private Long batchId;
 
-    /** 托盘号 */
+    /** 托盘号（MSE托盘编码直接存此字段） */
     private String palletNo;
+
+    /** MSE是否入库 0否 1是 */
+    private String toWarehouse;
 
     /** 托盘状态 0待扫 1部分已扫 2全部已扫 */
     private String trayStatus;

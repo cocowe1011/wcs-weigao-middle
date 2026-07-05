@@ -6,6 +6,7 @@
         <id     property="id"          column="id"           jdbcType="BIGINT"/>
         <result property="batchId"     column="batch_id"     jdbcType="BIGINT"/>
         <result property="palletNo"    column="pallet_no"    jdbcType="VARCHAR"/>
+        <result property="toWarehouse" column="to_warehouse" jdbcType="CHAR"/>
         <result property="trayStatus"  column="tray_status"  jdbcType="CHAR"/>
         <result property="virtualId"             column="virtual_id"              jdbcType="VARCHAR"/>
         <result property="loadStatus"            column="load_status"             jdbcType="CHAR"/>
@@ -18,7 +19,7 @@
     </resultMap>
 
     <select id="selectByBatchId" resultMap="ProducePalletMap">
-        SELECT id, batch_id, pallet_no, tray_status, virtual_id, load_status, load_time,
+        SELECT id, batch_id, pallet_no, to_warehouse, tray_status, virtual_id, load_status, load_time,
                send_destination_code, send_status, send_time, invalid_flag, created_at
         FROM dbo.produce_pallet
         WHERE batch_id = #{batchId}

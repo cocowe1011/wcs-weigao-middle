@@ -10,6 +10,7 @@ import io.swagger.annotations.ApiParam;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * (QueueInfo)控制器
@@ -52,6 +53,14 @@ public class  QueueInfoController {
     @GetMapping("/getQueueInfoById")
     public ResponseResult<QueueInfo> getQueueInfoById(@ApiParam(value = "队列ID", required = true) @RequestParam Long id) {
         return ResponseResult.success(this.queueInfoService.getQueueInfoById(id));
+    }
+
+    @ApiOperation("根据预热柜/灭菌柜编号查询WCS队列信息（对外接口）")
+    @PostMapping("/getProductInfo")
+    public ResponseResult<Map<String, Object>> getProductInfo(
+            @ApiParam(value = "预热柜/灭菌柜编号，预热柜：Y3201~Y3215 灭菌柜：3201~3215", required = true)
+            @RequestParam("queueCode") String queueCode) {
+        return ResponseResult.success(this.queueInfoService.getProductInfo(queueCode));
     }
 
 }

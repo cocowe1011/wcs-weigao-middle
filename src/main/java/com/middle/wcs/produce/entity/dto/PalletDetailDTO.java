@@ -23,6 +23,10 @@ public class PalletDetailDTO {
     private Long batchId;
 
     private String palletNo;
+
+    /** MSE是否入库 0否 1是 */
+    private String toWarehouse;
+
     private String trayStatus;
 
     /** 虚拟托盘ID */
@@ -53,6 +57,7 @@ public class PalletDetailDTO {
         dto.setId(pallet.getId());
         dto.setBatchId(pallet.getBatchId());
         dto.setPalletNo(pallet.getPalletNo());
+        dto.setToWarehouse(pallet.getToWarehouse());
         dto.setTrayStatus(pallet.getTrayStatus());
         dto.setVirtualId(pallet.getVirtualId());
         dto.setLoadStatus(pallet.getLoadStatus());
