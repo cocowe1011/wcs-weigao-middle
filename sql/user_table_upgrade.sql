@@ -2,7 +2,7 @@
 
 -- 1. 添加用户角色字段
 ALTER TABLE user_info ADD user_role NVARCHAR(20) DEFAULT 'OPERATOR';
-EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'用户角色（ADMIN-管理员，OPERATOR-操作员）', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'user_info', @level2type=N'COLUMN', @level2name=N'user_role';
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'用户角色（ADMIN-管理员，OPERATOR-操作员，TECHNICIAN-工艺员）', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'user_info', @level2type=N'COLUMN', @level2name=N'user_role';
 
 -- 2. 添加登录失败次数字段
 ALTER TABLE user_info ADD login_fail_count INT DEFAULT 0;
@@ -31,6 +31,27 @@ END
 
 -- 8. 更新现有用户为操作员角色
 UPDATE user_info SET user_role = 'OPERATOR' WHERE user_code != 'admin' AND user_role IS NULL;
+
+-- 9. 添加密码最后修改时间字段
+IF COL_LENGTH('dbo.user_info', 'password_change_time') IS NULL
+BEGIN
+    ALTER TABLE user_info ADD password_change_time DATETIME NULL;
+END
+GO
+IF NOT EXISTS (
+    SELECT 1 FROM sys.extended_properties
+    WHERE major_id = OBJECT_ID('dbo.user_info')
+      AND minor_id = COLUMNPROPERTY(OBJECT_ID('dbo.user_info'), 'password_change_time', 'ColumnId')
+      AND name = 'MS_Description'
+)
+BEGIN
+    EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'密码最后修改时间', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'user_info', @level2type=N'COLUMN', @level2name=N'password_change_time';
+END
+GO
+
+-- 10. 初始化现有用户的密码修改时间为更新时间（如果没有update_time则用create_time）
+UPDATE user_info SET password_change_time = ISNULL(update_time, create_time) WHERE password_change_time IS NULL;
+GO
 
 
 -- =============================================

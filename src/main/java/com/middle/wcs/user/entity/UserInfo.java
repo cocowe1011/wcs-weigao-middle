@@ -1,5 +1,6 @@
 package com.middle.wcs.user.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -38,7 +39,7 @@ public class UserInfo {
     private String userPassword;
 
     /**
-     * 用户角色（ADMIN-管理员，OPERATOR-操作员）
+     * 用户角色（ADMIN-管理员，OPERATOR-操作员，TECHNICIAN-工艺员）
      */
     private String userRole;
 
@@ -61,5 +62,16 @@ public class UserInfo {
      * 更新时间
      */
     private Date updateTime;
+
+    /**
+     * 密码最后修改时间
+     */
+    private Date passwordChangeTime;
+
+    /**
+     * 密码是否过期（非数据库字段，登录时计算）
+     */
+    @TableField(exist = false)
+    private Boolean passwordExpired;
 
 }

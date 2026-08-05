@@ -43,6 +43,10 @@ public enum CommonErrorCode implements IErrorCode {
      * 已有批次正在执行
      */
     BATCH_ALREADY_EXECUTING("0007", "已有批次正在执行，请等待完成后再确认新批次"),
+    /**
+     * 不允许删除管理员账号
+     */
+    CANNOT_DELETE_ADMIN("0008", "不允许删除管理员账号！"),
     ;
     private String code;
     private String msg;

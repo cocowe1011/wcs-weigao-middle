@@ -98,4 +98,14 @@ public class UserInfoController {
     public ResponseResult<Boolean> verifyPassword (@RequestBody UserInfo userInfo) {
         return  ResponseResult.success(userInfoService.verifyPassword(userInfo));
     }
+
+    /**
+     * 更新用户信息（姓名、角色）（仅管理员可用）
+     * @param userInfo 用户信息
+     * @return 操作结果
+     */
+    @PostMapping("/updateUserInfo")
+    public ResponseResult<Integer> updateUserInfo(@RequestBody UserInfo userInfo) {
+        return ResponseResult.success(userInfoService.updateUserInfo(userInfo));
+    }
 }

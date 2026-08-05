@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -68,7 +70,7 @@ public class LoginServiceImpl implements LoginService {
                     throw BusinessException.build(CommonErrorCode.PASSWORD_ERROR_LIMIT, String.valueOf(remainingChances));
                 }
             } else {
-                // 管理员不限制登录次数
+                // 管理员/工艺员不限制登录次数
                 throw BusinessException.build(CommonErrorCode.PASSWORD_ERROR);
             }
         }
@@ -78,6 +80,31 @@ public class LoginServiceImpl implements LoginService {
             loginFailCountService.resetLoginFailCount(user.getUserCode());
         }
 
+        // 判断密码是否超过3个月未修改
+        user.setPasswordExpired(isPasswordExpired(user));
+
         return user;
+    }
+
+    /**
+     * 判断密码是否过期（超过3个月未修改）
+     * @param user 用户信息
+     * @return true-已过期，false-未过期
+     */
+    private boolean isPasswordExpired(UserInfo user) {
+        // admin账号不强制改密
+        if ("admin".equalsIgnoreCase(user.getUserCode())) {
+            return false;
+        }
+        Date changeTime = user.getPasswordChangeTime();
+        // 如果从未修改过密码（旧数据），视为已过期
+        if (changeTime == null) {
+            return true;
+        }
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(changeTime);
+        cal.add(Calendar.MONTH, 3);
+        Date expireDate = cal.getTime();
+        return new Date().after(expireDate);
     }
 }

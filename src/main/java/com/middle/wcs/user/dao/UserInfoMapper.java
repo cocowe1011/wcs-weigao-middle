@@ -64,4 +64,11 @@ public interface UserInfoMapper extends BaseMapper<UserInfo> {
      * @return 插入结果
      */
     Integer insertDefaultAdmin();
+
+    /**
+     * 更新用户信息（姓名、角色）
+     * @param userInfo 用户信息
+     * @return 更新结果
+     */
+    Integer updateUserInfo(UserInfo userInfo);
 }

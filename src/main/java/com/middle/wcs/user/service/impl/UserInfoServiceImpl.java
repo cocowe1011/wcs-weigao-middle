@@ -1,6 +1,5 @@
 package com.middle.wcs.user.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.middle.wcs.hander.BusinessException;
 import com.middle.wcs.hander.CommonErrorCode;
 import com.middle.wcs.user.entity.UserInfo;
@@ -32,11 +31,14 @@ public class UserInfoServiceImpl implements UserInfoService {
             throw BusinessException.build(CommonErrorCode.DUPLICATE_USER_CODE);
         }
         // 设置默认值
-        userInfo.setUserRole("OPERATOR"); // 新注册的都是操作员
+        if (userInfo.getUserRole() == null || userInfo.getUserRole().isEmpty()) {
+            userInfo.setUserRole("OPERATOR"); // 默认角色为操作员
+        }
         userInfo.setLoginFailCount(0);
         userInfo.setIsLocked(0);
         userInfo.setCreateTime(new Date());
         userInfo.setUpdateTime(new Date());
+        userInfo.setPasswordChangeTime(new Date());
         return userInfoMapper.insert(userInfo);
     }
 
@@ -83,6 +85,15 @@ public class UserInfoServiceImpl implements UserInfoService {
 
     @Override
     public Integer deleteUser(Long userId) {
+        // 先查询用户信息
+        UserInfo userInfo = userInfoMapper.selectById(userId);
+        if (userInfo == null) {
+            throw BusinessException.build(CommonErrorCode.NOT_EXITS_USER_CODE);
+        }
+        // 不允许删除 admin 账号
+        if ("admin".equals(userInfo.getUserCode())) {
+            throw BusinessException.build(CommonErrorCode.CANNOT_DELETE_ADMIN);
+        }
         Integer result = userInfoMapper.deleteUser(userId);
         if (result == 0) {
             throw BusinessException.build(CommonErrorCode.NOT_EXITS_USER_CODE);
@@ -98,5 +109,18 @@ public class UserInfoServiceImpl implements UserInfoService {
         }
         userInfo.setUserPassword(newPassword);
         return userInfoMapper.updatePassword(userInfo);
+    }
+
+    @Override
+    public Integer updateUserInfo(UserInfo userInfo) {
+        UserInfo existingUser = userInfoMapper.selectById(userInfo.getUserId());
+        if (existingUser == null) {
+            throw BusinessException.build(CommonErrorCode.NOT_EXITS_USER_CODE);
+        }
+        // 不允许修改 admin 账号
+        if ("admin".equals(existingUser.getUserCode())) {
+            throw BusinessException.build(CommonErrorCode.NOT_EXITS_USER_CODE);
+        }
+        return userInfoMapper.updateUserInfo(userInfo);
     }
 }

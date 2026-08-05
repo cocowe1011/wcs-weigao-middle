@@ -53,4 +53,11 @@ public interface UserInfoService {
      * @return 操作结果
      */
     Integer resetPassword(Long userId, String newPassword);
+
+    /**
+     * 更新用户信息（姓名、角色）
+     * @param userInfo 用户信息
+     * @return 操作结果
+     */
+    Integer updateUserInfo(UserInfo userInfo);
 }

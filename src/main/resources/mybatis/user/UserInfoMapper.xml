@@ -2,17 +2,17 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.middle.wcs.user.dao.UserInfoMapper">
     <select id="selectUserList" resultType="com.middle.wcs.user.entity.UserInfo" parameterType="com.middle.wcs.user.entity.UserInfo">
-        select user_id, user_code, user_password, user_name, user_role, login_fail_count, is_locked, create_time, update_time
+        select user_id, user_code, user_password, user_name, user_role, login_fail_count, is_locked, create_time, update_time, password_change_time
         from user_info where user_code = #{userCode}
     </select>
 
     <select id="selectAllUsers" resultType="com.middle.wcs.user.entity.UserInfo">
-        select user_id, user_code, user_name, user_role, is_locked, create_time, update_time
-        from user_info where user_role = 'OPERATOR'
+        select user_id, user_code, user_name, user_role, is_locked, create_time, update_time, password_change_time
+        from user_info where user_code != 'admin'
     </select>
 
     <update id="updatePassword" parameterType="com.middle.wcs.user.entity.UserInfo">
-        UPDATE user_info set user_password = #{userPassword}, update_time = GETDATE()
+        UPDATE user_info set user_password = #{userPassword}, password_change_time = GETDATE(), update_time = GETDATE()
         where user_code = #{userCode}
     </update>
 
@@ -32,14 +32,20 @@
     </update>
 
     <delete id="deleteUser">
-        DELETE FROM user_info where user_id = #{userId} and user_role = 'OPERATOR'
+        DELETE FROM user_info where user_id = #{userId} and user_code != 'admin'
     </delete>
 
     <insert id="insertDefaultAdmin">
         IF NOT EXISTS (SELECT 1 FROM user_info WHERE user_code = 'admin')
         BEGIN
-        INSERT INTO user_info (user_code, user_password, user_name, user_role, login_fail_count, is_locked, create_time, update_time)
-        VALUES ('admin', 'wcs-admin', N'系统管理员', 'ADMIN', 0, 0, GETDATE(), GETDATE())
+        INSERT INTO user_info (user_code, user_password, user_name, user_role, login_fail_count, is_locked, create_time, update_time, password_change_time)
+        VALUES ('admin', 'wcs-admin', N'系统管理员', 'ADMIN', 0, 0, GETDATE(), GETDATE(), GETDATE())
         END
     </insert>
+
+    <update id="updateUserInfo" parameterType="com.middle.wcs.user.entity.UserInfo">
+        UPDATE user_info
+        SET user_name = #{userName}, user_role = #{userRole}, update_time = GETDATE()
+        WHERE user_id = #{userId} AND user_code != 'admin'
+    </update>
 </mapper>
