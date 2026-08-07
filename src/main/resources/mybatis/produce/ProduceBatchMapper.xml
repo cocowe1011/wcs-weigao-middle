@@ -35,4 +35,21 @@
           </if>
     </select>
 
+    <select id="selectListByPage" resultMap="ProduceBatchMap">
+        SELECT b.id, b.batch_no, b.sterilization_order_no, b.pallet_quantity, b.sterilizer_name_code,
+               b.process_plan_name_code, b.status, b.invalid_flag, b.confirm_time, b.finish_time, b.created_at
+        FROM dbo.produce_batch b
+        WHERE b.invalid_flag = '0'
+        <if test="sterilizationOrderNo != null and sterilizationOrderNo != ''">
+            AND b.sterilization_order_no LIKE CONCAT('%', #{sterilizationOrderNo}, '%')
+        </if>
+        <if test="createdAtStart != null and createdAtStart != ''">
+            AND b.created_at &gt;= CAST(#{createdAtStart} AS DATETIME)
+        </if>
+        <if test="createdAtEnd != null and createdAtEnd != ''">
+            AND b.created_at &lt; DATEADD(DAY, 1, CAST(#{createdAtEnd} AS DATETIME))
+        </if>
+        ORDER BY b.created_at DESC
+    </select>
+
 </mapper>

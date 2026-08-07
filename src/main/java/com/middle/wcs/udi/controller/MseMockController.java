@@ -49,7 +49,7 @@ public class MseMockController {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("sterilization_order_no", "202606220503022-MJ");
         data.put("pallet_quantity", 7);
-        data.put("sterilizer_name_code", "0302");
+        data.put("sterilizer_name_code", "3202");
         data.put("process_plan_name_code", "EO");
 
         List<Map<String, Object>> palletList = new ArrayList<>();

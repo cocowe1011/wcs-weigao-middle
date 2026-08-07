@@ -1,10 +1,12 @@
 package com.middle.wcs.produce.service;
 
 import com.middle.wcs.produce.entity.dto.BatchDetailDTO;
+import com.middle.wcs.produce.entity.dto.BatchHistoryQueryDTO;
 import com.middle.wcs.produce.entity.dto.PalletDetailDTO;
 import com.middle.wcs.produce.entity.po.ProduceBatch;
 import com.middle.wcs.produce.entity.po.ProduceGoods;
 import com.middle.wcs.produce.entity.po.ProducePallet;
+import com.github.pagehelper.PageInfo;
 
 /**
  * 生产批次 Service 接口
@@ -41,6 +43,14 @@ public interface ProduceBatchService {
      * @return BatchDetailDTO，若不存在则返回 null
      */
     BatchDetailDTO getBatchDetailById(Long batchId);
+
+    /**
+     * 历史批次分页查询（PageHelper）
+     *
+     * @param query 查询条件
+     * @return PageInfo
+     */
+    PageInfo<ProduceBatch> selectListByPage(BatchHistoryQueryDTO query);
 
     /**
      * 确认批次，将状态更新为已确认（status=1）。

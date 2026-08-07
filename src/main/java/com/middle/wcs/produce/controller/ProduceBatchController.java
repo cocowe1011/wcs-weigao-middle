@@ -1,7 +1,9 @@
 package com.middle.wcs.produce.controller;
 
+import com.github.pagehelper.PageInfo;
 import com.middle.wcs.hander.ResponseResult;
 import com.middle.wcs.produce.entity.dto.BatchDetailDTO;
+import com.middle.wcs.produce.entity.dto.BatchHistoryQueryDTO;
 import com.middle.wcs.produce.entity.dto.PalletDetailDTO;
 import com.middle.wcs.produce.entity.po.ProduceBatch;
 import com.middle.wcs.produce.entity.po.ProduceGoods;
@@ -36,6 +38,13 @@ public class ProduceBatchController {
     public ResponseResult<BatchDetailDTO> getById(
             @ApiParam(value = "批次ID", required = true) @RequestParam Long id) {
         return ResponseResult.success(produceBatchService.getBatchDetailById(id));
+    }
+
+    @ApiOperation("历史批次分页查询")
+    @PostMapping("/selectListByPage")
+    public ResponseResult<PageInfo<ProduceBatch>> selectListByPage(
+            @ApiParam(value = "查询条件", required = true) @RequestBody BatchHistoryQueryDTO query) {
+        return ResponseResult.success(produceBatchService.selectListByPage(query));
     }
 
     @ApiOperation("根据货物UID查询批次详情（批次+托盘+货物嵌套）")

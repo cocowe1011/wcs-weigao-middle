@@ -1,11 +1,14 @@
 package com.middle.wcs.produce.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageInfo;
 import com.middle.wcs.produce.dao.ProduceBatchDestinationMapper;
 import com.middle.wcs.produce.dao.ProduceBatchMapper;
 import com.middle.wcs.produce.dao.ProduceGoodsMapper;
 import com.middle.wcs.produce.dao.ProducePalletMapper;
 import com.middle.wcs.produce.entity.dto.BatchDetailDTO;
+import com.middle.wcs.produce.entity.dto.BatchHistoryQueryDTO;
 import com.middle.wcs.produce.entity.dto.PalletDetailDTO;
 import com.middle.wcs.produce.entity.po.ProduceBatch;
 import com.middle.wcs.produce.entity.po.ProduceBatchDestination;
@@ -21,6 +24,8 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import static com.github.pagehelper.page.PageMethod.startPage;
 
 /**
  * 生产批次 Service 实现
@@ -145,6 +150,18 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
             return null;
         }
         return buildBatchDetail(batch);
+    }
+
+    @Override
+    public PageInfo<ProduceBatch> selectListByPage(BatchHistoryQueryDTO query) {
+        if (query == null) {
+            query = new BatchHistoryQueryDTO();
+        }
+        int pageNum = query.getPageNum() == null || query.getPageNum() < 1 ? 1 : query.getPageNum();
+        int pageSize = query.getPageSize() == null || query.getPageSize() < 1 ? 20 : query.getPageSize();
+        Page<ProduceBatch> page = startPage(pageNum, pageSize);
+        produceBatchMapper.selectListByPage(query);
+        return new PageInfo<>(page);
     }
 
     /**

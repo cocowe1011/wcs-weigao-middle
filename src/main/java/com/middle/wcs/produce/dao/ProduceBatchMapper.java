@@ -1,9 +1,12 @@
 package com.middle.wcs.produce.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.middle.wcs.produce.entity.dto.BatchHistoryQueryDTO;
 import com.middle.wcs.produce.entity.po.ProduceBatch;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * 生产批次 Mapper
@@ -23,4 +26,9 @@ public interface ProduceBatchMapper extends BaseMapper<ProduceBatch> {
      * @return 数量
      */
     int countExecutingExcludeBatch(@Param("excludeBatchId") Long excludeBatchId);
+
+    /**
+     * 历史批次列表（配合 PageHelper 分页，SQL 本身不分页）
+     */
+    List<ProduceBatch> selectListByPage(BatchHistoryQueryDTO query);
 }
