@@ -75,6 +75,13 @@ public class ProduceBatchController {
         return ResponseResult.success(produceBatchService.cancel(po));
     }
 
+    @ApiOperation("完成批次，状态更新为完成（status=3）")
+    @PostMapping("/finish")
+    public ResponseResult<Integer> finish(
+            @ApiParam(value = "批次信息", required = true) @RequestBody ProduceBatch po) {
+        return ResponseResult.success(produceBatchService.finish(po));
+    }
+
     @ApiOperation("向批次添加一个空托盘")
     @PostMapping("/addPallet")
     public ResponseResult<PalletDetailDTO> addPallet(

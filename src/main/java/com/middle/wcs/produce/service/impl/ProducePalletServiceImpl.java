@@ -9,7 +9,9 @@ import com.middle.wcs.produce.entity.dto.SendDestinationDTO;
 import com.middle.wcs.produce.entity.po.ProduceBatch;
 import com.middle.wcs.produce.entity.po.ProduceGoods;
 import com.middle.wcs.produce.entity.po.ProducePallet;
+import com.middle.wcs.produce.service.ProduceBatchService;
 import com.middle.wcs.produce.service.ProducePalletService;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +33,10 @@ public class ProducePalletServiceImpl implements ProducePalletService {
 
     @Resource
     private ProduceGoodsMapper produceGoodsMapper;
+
+    @Lazy
+    @Resource
+    private ProduceBatchService produceBatchService;
 
     @Override
     public List<PalletDetailDTO> listByBatchId(Long batchId) {
@@ -147,6 +153,8 @@ public class ProducePalletServiceImpl implements ProducePalletService {
         }
 
         producePalletMapper.assignVirtualId(palletId, virtualId);
+        // 全部托盘上货完成后自动完结批次
+        produceBatchService.tryFinishIfAllLoaded(pallet.getBatchId());
 
         // 回查更新后的托盘
         ProducePallet updated = producePalletMapper.selectById(palletId);
@@ -195,7 +203,10 @@ public class ProducePalletServiceImpl implements ProducePalletService {
             produceGoodsMapper.markScanned(uid, "01002");
         }
 
-        // 6. 回查更新后的托盘
+        // 6. 全部托盘上货完成后自动完结批次
+        produceBatchService.tryFinishIfAllLoaded(batchId);
+
+        // 7. 回查更新后的托盘
         ProducePallet updated = producePalletMapper.selectById(matchedPallet.getId());
         List<ProduceGoods> goods = produceGoodsMapper.selectByPalletId(matchedPallet.getId());
         return PalletDetailDTO.from(updated, goods);

@@ -68,6 +68,24 @@ public interface ProduceBatchService {
     Integer cancel(ProduceBatch po);
 
     /**
+     * 完成批次：status→3，写入 finishTime，并取消激活目的地。
+     * 已完成（status=3）时幂等直接返回；仅允许 status∈{1,2} 或已完成。
+     *
+     * @param po 批次信息（需包含 id）
+     * @return 影响行数（幂等已完成时返回 0）
+     */
+    Integer finish(ProduceBatch po);
+
+    /**
+     * 若批次下全部有效托盘均已上货（load_status=1），则自动完成批次。
+     * 无托盘时不自动完结。
+     *
+     * @param batchId 批次ID
+     * @return true 表示本次已完结（或已是完成态），false 表示尚未满足条件
+     */
+    boolean tryFinishIfAllLoaded(Long batchId);
+
+    /**
      * 向指定批次添加一个空托盘，托盘号自动生成
      *
      * @param po 托盘信息（需包含 batchId）

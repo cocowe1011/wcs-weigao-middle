@@ -210,13 +210,74 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
         int rows = produceBatchMapper.updateById(batch);
 
         // 同步取消该批次当前激活的目的地设置
+        cancelActiveDestination(batchId);
+        return rows;
+    }
+
+    @Override
+    @Transactional
+    public Integer finish(ProduceBatch po) {
+        Long batchId = po.getId();
+        ProduceBatch batch = produceBatchMapper.selectById(batchId);
+        if (batch == null) {
+            throw new RuntimeException("批次不存在: " + batchId);
+        }
+        // 已完成：幂等直接返回
+        if ("3".equals(batch.getStatus())) {
+            return 0;
+        }
+        if (!"1".equals(batch.getStatus()) && !"2".equals(batch.getStatus())) {
+            throw new RuntimeException("当前批次状态不可完成: " + batch.getStatus());
+        }
+        return doFinish(batch);
+    }
+
+    @Override
+    @Transactional
+    public boolean tryFinishIfAllLoaded(Long batchId) {
+        if (batchId == null) {
+            return false;
+        }
+        ProduceBatch batch = produceBatchMapper.selectById(batchId);
+        if (batch == null) {
+            return false;
+        }
+        if ("3".equals(batch.getStatus())) {
+            return true;
+        }
+        if (!"1".equals(batch.getStatus()) && !"2".equals(batch.getStatus())) {
+            return false;
+        }
+        List<ProducePallet> pallets = producePalletMapper.selectByBatchId(batchId);
+        if (pallets == null || pallets.isEmpty()) {
+            return false;
+        }
+        boolean allLoaded = pallets.stream().allMatch(p -> "1".equals(p.getLoadStatus()));
+        if (!allLoaded) {
+            return false;
+        }
+        doFinish(batch);
+        return true;
+    }
+
+    /**
+     * 将批次标记为完成，并取消激活目的地
+     */
+    private Integer doFinish(ProduceBatch batch) {
+        batch.setStatus("3");
+        batch.setFinishTime(new Date());
+        int rows = produceBatchMapper.updateById(batch);
+        cancelActiveDestination(batch.getId());
+        return rows;
+    }
+
+    private void cancelActiveDestination(Long batchId) {
         ProduceBatchDestination activeDest = produceBatchDestinationMapper.selectActiveByBatchId(batchId);
         if (activeDest != null) {
             activeDest.setStatus("1");
             activeDest.setCancelTime(new Date());
             produceBatchDestinationMapper.updateById(activeDest);
         }
-        return rows;
     }
 
     @Override
