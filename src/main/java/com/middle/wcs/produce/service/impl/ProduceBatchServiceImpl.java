@@ -276,4 +276,18 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
 
         return goods;
     }
+
+    @Override
+    public Integer updateSterilizerNameCode(ProduceBatch po) {
+        if (po == null || po.getId() == null) {
+            throw new RuntimeException("批次ID不能为空");
+        }
+        ProduceBatch batch = produceBatchMapper.selectById(po.getId());
+        if (batch == null) {
+            throw new RuntimeException("批次不存在: " + po.getId());
+        }
+        String code = po.getSterilizerNameCode() != null ? po.getSterilizerNameCode().trim() : "";
+        batch.setSterilizerNameCode(code);
+        return produceBatchMapper.updateById(batch);
+    }
 }

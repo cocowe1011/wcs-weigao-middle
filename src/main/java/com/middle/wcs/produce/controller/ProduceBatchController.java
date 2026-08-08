@@ -88,4 +88,11 @@ public class ProduceBatchController {
             @ApiParam(value = "货物信息", required = true) @RequestBody ProduceGoods po) {
         return ResponseResult.success(produceBatchService.addGoods(po));
     }
+
+    @ApiOperation("更新批次档案目的地（灭菌柜编码 sterilizerNameCode）")
+    @PostMapping("/updateSterilizerNameCode")
+    public ResponseResult<Integer> updateSterilizerNameCode(
+            @ApiParam(value = "批次信息（id + sterilizerNameCode）", required = true) @RequestBody ProduceBatch po) {
+        return ResponseResult.success(produceBatchService.updateSterilizerNameCode(po));
+    }
 }

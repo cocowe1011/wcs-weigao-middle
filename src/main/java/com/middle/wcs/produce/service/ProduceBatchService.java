@@ -82,4 +82,12 @@ public interface ProduceBatchService {
      * @return 添加后的 ProduceGoods
      */
     ProduceGoods addGoods(ProduceGoods po);
+
+    /**
+     * 更新批次档案上的灭菌柜/目的地编码（sterilizerNameCode）
+     *
+     * @param po 需包含 id、sterilizerNameCode
+     * @return 影响行数
+     */
+    Integer updateSterilizerNameCode(ProduceBatch po);
 }
