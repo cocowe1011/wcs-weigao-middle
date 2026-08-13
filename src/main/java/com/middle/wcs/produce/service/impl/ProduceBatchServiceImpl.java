@@ -234,7 +234,7 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
 
     @Override
     @Transactional
-    public boolean tryFinishIfAllLoaded(Long batchId) {
+    public boolean tryFinishIfAllSent(Long batchId) {
         if (batchId == null) {
             return false;
         }
@@ -252,12 +252,21 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
         if (pallets == null || pallets.isEmpty()) {
             return false;
         }
-        boolean allLoaded = pallets.stream().allMatch(p -> "1".equals(p.getLoadStatus()));
-        if (!allLoaded) {
+        boolean allSentRealDest = pallets.stream().allMatch(this::hasRealDestination);
+        if (!allSentRealDest) {
             return false;
         }
         doFinish(batch);
         return true;
+    }
+
+    /** 已发送且编码不是 999 异常 */
+    private boolean hasRealDestination(ProducePallet pallet) {
+        if (!"1".equals(pallet.getSendStatus())) {
+            return false;
+        }
+        String code = pallet.getSendDestinationCode();
+        return code != null && !code.isEmpty() && !"999".equals(code);
     }
 
     /**

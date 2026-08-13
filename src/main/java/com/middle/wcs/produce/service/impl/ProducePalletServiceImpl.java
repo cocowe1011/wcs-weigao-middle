@@ -100,7 +100,10 @@ public class ProducePalletServiceImpl implements ProducePalletService {
         // 5. 回写托盘（palletId + virtualId 双条件）
         producePalletMapper.sendDestination(palletId, virtualId, trayStatus, sendCode);
 
-        // 6. 回查更新后数据
+        // 6. 全部托盘发出真实目的地后自动完结（999 不算）
+        produceBatchService.tryFinishIfAllSent(pallet.getBatchId());
+
+        // 7. 回查更新后数据
         ProducePallet updated = producePalletMapper.selectById(palletId);
         return PalletDetailDTO.from(updated, goodsList);
     }
@@ -153,8 +156,6 @@ public class ProducePalletServiceImpl implements ProducePalletService {
         }
 
         producePalletMapper.assignVirtualId(palletId, virtualId);
-        // 全部托盘上货完成后自动完结批次
-        produceBatchService.tryFinishIfAllLoaded(pallet.getBatchId());
 
         // 回查更新后的托盘
         ProducePallet updated = producePalletMapper.selectById(palletId);
@@ -203,10 +204,7 @@ public class ProducePalletServiceImpl implements ProducePalletService {
             produceGoodsMapper.markScanned(uid, "01002");
         }
 
-        // 6. 全部托盘上货完成后自动完结批次
-        produceBatchService.tryFinishIfAllLoaded(batchId);
-
-        // 7. 回查更新后的托盘
+        // 6. 回查更新后的托盘
         ProducePallet updated = producePalletMapper.selectById(matchedPallet.getId());
         List<ProduceGoods> goods = produceGoodsMapper.selectByPalletId(matchedPallet.getId());
         return PalletDetailDTO.from(updated, goods);
@@ -265,7 +263,10 @@ public class ProducePalletServiceImpl implements ProducePalletService {
         // 4. 更新数据库
         producePalletMapper.sendDestination(palletId, virtualId, trayStatus, sendCode);
 
-        // 5. 回查
+        // 5. 复检改写 999 后，若全部已发真实目的地则自动完结
+        produceBatchService.tryFinishIfAllSent(pallet.getBatchId());
+
+        // 6. 回查
         ProducePallet updated = producePalletMapper.selectById(palletId);
         return PalletDetailDTO.from(updated, goodsList);
     }

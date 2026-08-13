@@ -77,13 +77,13 @@ public interface ProduceBatchService {
     Integer finish(ProduceBatch po);
 
     /**
-     * 若批次下全部有效托盘均已上货（load_status=1），则自动完成批次。
-     * 无托盘时不自动完结。
+     * 若批次下全部有效托盘均已发出真实目的地（send_status=1 且编码非 999），则自动完成批次。
+     * 无托盘、存在未发送或 999 异常时不自动完结。
      *
      * @param batchId 批次ID
      * @return true 表示本次已完结（或已是完成态），false 表示尚未满足条件
      */
-    boolean tryFinishIfAllLoaded(Long batchId);
+    boolean tryFinishIfAllSent(Long batchId);
 
     /**
      * 向指定批次添加一个空托盘，托盘号自动生成
