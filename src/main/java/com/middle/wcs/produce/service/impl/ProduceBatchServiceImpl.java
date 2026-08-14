@@ -48,7 +48,7 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
     @Override
     public BatchDetailDTO getByGoodsUid(String uid) {
         // 1. 按 uid 精确查找货物
-        ProduceGoods goods = produceGoodsMapper.selectByUid(uid);
+        ProduceGoods goods = produceGoodsMapper.selectByUid(uid, null);
         if (goods == null) {
             return null;
         }

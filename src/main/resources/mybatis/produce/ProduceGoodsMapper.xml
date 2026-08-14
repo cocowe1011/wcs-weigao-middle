@@ -27,6 +27,9 @@
         FROM dbo.produce_goods
         WHERE uid = #{uid}
           AND invalid_flag = '0'
+          <if test="batchId != null">
+          AND batch_id = #{batchId}
+          </if>
     </select>
 
     <select id="selectByPalletId" resultMap="ProduceGoodsMap">
@@ -76,6 +79,9 @@
             scan_time     = SYSDATETIME()
         WHERE uid          = #{uid}
           AND invalid_flag = '0'
+          <if test="batchId != null">
+          AND batch_id     = #{batchId}
+          </if>
     </update>
 
     <!-- 真删：按托盘ID删除其下所有货物 -->

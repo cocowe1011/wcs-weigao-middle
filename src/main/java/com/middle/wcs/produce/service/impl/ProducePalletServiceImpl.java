@@ -72,7 +72,7 @@ public class ProducePalletServiceImpl implements ProducePalletService {
         // 条码不存在/已作废时不抛异常，跳过即可，最终 tray_status 不为 "2" 会走 999 分支
         if (barcodes != null && !barcodes.isEmpty()) {
             for (String uid : barcodes) {
-                produceGoodsMapper.markScanned(uid, "01006");
+                produceGoodsMapper.markScanned(uid, "01006", pallet.getBatchId());
             }
         }
 
@@ -194,7 +194,7 @@ public class ProducePalletServiceImpl implements ProducePalletService {
 
         // 5. 更新所有匹配条码的扫码状态（01002已扫码）
         for (String uid : barcodes) {
-            produceGoodsMapper.markScanned(uid, "01002");
+            produceGoodsMapper.markScanned(uid, "01002", batchId);
         }
 
         // 6. 回查更新后的托盘
@@ -243,7 +243,7 @@ public class ProducePalletServiceImpl implements ProducePalletService {
     @Override
     public PalletDetailDTO getByGoodsUid(String uid) {
         // 1. 根据 UID 查找货物
-        ProduceGoods goods = produceGoodsMapper.selectByUid(uid);
+        ProduceGoods goods = produceGoodsMapper.selectByUid(uid, null);
         if (goods == null) {
             return null;
         }

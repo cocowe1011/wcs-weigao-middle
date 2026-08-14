@@ -14,9 +14,10 @@ import java.util.List;
 public interface ProduceGoodsMapper extends BaseMapper<ProduceGoods> {
 
     /**
-     * 根据 uid 查询货物（含批次和托盘ID）
+     * 根据 uid 查询货物（含批次和托盘ID）。
+     * batchId 不为空时同时按批次过滤，避免不同订单出现相同 UDI 时 selectOne 命中多条。
      */
-    ProduceGoods selectByUid(@Param("uid") String uid);
+    ProduceGoods selectByUid(@Param("uid") String uid, @Param("batchId") Long batchId);
 
     /**
      * 根据托盘ID查询货物列表
@@ -35,9 +36,9 @@ public interface ProduceGoodsMapper extends BaseMapper<ProduceGoods> {
     int insertBatch(@Param("list") List<ProduceGoods> list);
 
     /**
-     * 扫码回写：将指定 uid 的货物标记为已扫码，覆盖 scan_location 和 scan_time
+     * 扫码回写：将指定 uid（及可选 batchId）的货物标记为已扫码，覆盖 scan_location 和 scan_time
      */
-    int markScanned(@Param("uid") String uid, @Param("scanLocation") String scanLocation);
+    int markScanned(@Param("uid") String uid, @Param("scanLocation") String scanLocation, @Param("batchId") Long batchId);
     /**
      * 真删：按托盘ID删除其下所有货物
      */

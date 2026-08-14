@@ -20,11 +20,15 @@ public class ProduceGoodsServiceImpl implements ProduceGoodsService {
     public Integer markScanned(ProduceGoods po) {
         String uid = po.getUid();
         String scanLocation = po.getScanLocation();
-        ProduceGoods goods = produceGoodsMapper.selectByUid(uid);
+        Long batchId = po.getBatchId();
+        if (batchId == null) {
+            throw new RuntimeException("批次ID不能为空");
+        }
+        ProduceGoods goods = produceGoodsMapper.selectByUid(uid, batchId);
         if (goods == null) {
             throw new RuntimeException("货物不存在或已作废: " + uid);
         }
-        int rows = produceGoodsMapper.markScanned(uid, scanLocation);
+        int rows = produceGoodsMapper.markScanned(uid, scanLocation, batchId);
         if (rows == 0) {
             throw new RuntimeException("扫码更新失败: " + uid);
         }
