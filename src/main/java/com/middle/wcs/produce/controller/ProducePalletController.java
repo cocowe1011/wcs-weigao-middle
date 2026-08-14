@@ -53,7 +53,7 @@ public class ProducePalletController {
         return ResponseResult.success(producePalletService.assignVirtualId(po));
     }
 
-    @ApiOperation("根据扫描条码匹配托盘并分配虚拟ID（原子操作：匹配+生成递增虚拟ID+持久化）")
+    @ApiOperation("根据扫描条码匹配托盘并分配虚拟ID（原子操作：匹配+按当日递增生成不重复虚拟ID+持久化）")
     @PostMapping("/matchAndAssignVirtualId")
     public ResponseResult<PalletDetailDTO> matchAndAssignVirtualId(
             @ApiParam(value = "匹配分配虚拟ID请求", required = true) @RequestBody MatchAndAssignDTO dto) {

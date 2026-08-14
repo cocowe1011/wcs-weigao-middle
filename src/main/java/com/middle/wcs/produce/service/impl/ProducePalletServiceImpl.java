@@ -17,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 生产托盘 Service 实现
@@ -183,17 +185,8 @@ public class ProducePalletServiceImpl implements ProducePalletService {
             return null;
         }
 
-        // 3. 生成下一个虚拟ID：查询当前批次已分配的最大虚拟ID + 1
-        Integer maxVirtualId = producePalletMapper.selectMaxVirtualIdByBatchId(batchId);
-        int nextVirtualId;
-        if (maxVirtualId == null || maxVirtualId < 10000) {
-            nextVirtualId = 10000;
-        } else if (maxVirtualId >= 29999) {
-            // 超范围回绕到10000（需确认该范围内无冲突）
-            nextVirtualId = 10000;
-        } else {
-            nextVirtualId = maxVirtualId + 1;
-        }
+        // 3. 生成下一个虚拟ID：当日已分配的最大虚拟ID + 1（跨批次不重复，次日从10000重新开始）
+        int nextVirtualId = nextVirtualIdToday();
 
         // 4. 持久化虚拟ID到数据库
         String virtualIdStr = String.valueOf(nextVirtualId);
@@ -208,6 +201,43 @@ public class ProducePalletServiceImpl implements ProducePalletService {
         ProducePallet updated = producePalletMapper.selectById(matchedPallet.getId());
         List<ProduceGoods> goods = produceGoodsMapper.selectByPalletId(matchedPallet.getId());
         return PalletDetailDTO.from(updated, goods);
+    }
+
+    /**
+     * 按当日已分配虚拟ID递增生成下一个ID（10000-29999）。
+     * 跨批次共用同一序号，当日不允许重复；次日从 10000 重新开始。
+     * 回绕到 10000 时跳过当日已占用的号。
+     */
+    private int nextVirtualIdToday() {
+        List<Integer> usedIds = producePalletMapper.selectUsedVirtualIdsToday();
+        Set<Integer> usedSet = new HashSet<Integer>();
+        int maxId = 9999;
+        if (usedIds != null) {
+            for (Integer id : usedIds) {
+                if (id == null) {
+                    continue;
+                }
+                usedSet.add(id);
+                if (id > maxId) {
+                    maxId = id;
+                }
+            }
+        }
+        int next = maxId >= 29999 ? 10000 : maxId + 1;
+        if (next < 10000) {
+            next = 10000;
+        }
+        int start = next;
+        while (usedSet.contains(next)) {
+            next++;
+            if (next > 29999) {
+                next = 10000;
+            }
+            if (next == start) {
+                throw new RuntimeException("当日虚拟ID已用尽（10000-29999）");
+            }
+        }
+        return next;
     }
 
     @Override

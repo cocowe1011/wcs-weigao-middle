@@ -97,14 +97,14 @@
         ORDER BY p.id ASC
     </select>
 
-    <!-- 查询批次中已分配的最大虚拟ID（10000-29999范围内），用于递增生成 -->
-    <select id="selectMaxVirtualIdByBatchId" resultType="java.lang.Integer">
-        SELECT MAX(CAST(virtual_id AS INT))
+    <!-- 查询当日已分配的虚拟ID（10000-29999），按 load_time 当天，用于当日不重复递增 -->
+    <select id="selectUsedVirtualIdsToday" resultType="java.lang.Integer">
+        SELECT TRY_CAST(virtual_id AS INT)
         FROM dbo.produce_pallet
-        WHERE batch_id    = #{batchId}
-          AND virtual_id IS NOT NULL
-          AND CAST(virtual_id AS INT) BETWEEN 10000 AND 29999
+        WHERE virtual_id IS NOT NULL
+          AND TRY_CAST(virtual_id AS INT) BETWEEN 10000 AND 29999
           AND invalid_flag = '0'
+          AND CONVERT(date, load_time) = CONVERT(date, GETDATE())
     </select>
 
     <!-- 真删：按ID删除托盘 -->

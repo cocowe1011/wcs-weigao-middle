@@ -54,10 +54,10 @@ public interface ProducePalletMapper extends BaseMapper<ProducePallet> {
     ProducePallet selectUnassignedByBarcodes(@Param("batchId") Long batchId, @Param("barcodes") List<String> barcodes);
 
     /**
-     * 查询批次中已分配的最大虚拟ID（10000-29999范围内）
-     * 用于递增生成下一个虚拟ID
+     * 查询当日已分配的虚拟ID列表（10000-29999范围内，按 load_time 当天）
+     * 用于生成当日不重复的下一个虚拟ID
      */
-    Integer selectMaxVirtualIdByBatchId(@Param("batchId") Long batchId);
+    List<Integer> selectUsedVirtualIdsToday();
     /**
      * 真删：按ID删除托盘
      */
