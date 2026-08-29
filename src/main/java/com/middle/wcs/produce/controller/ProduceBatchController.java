@@ -102,4 +102,11 @@ public class ProduceBatchController {
             @ApiParam(value = "批次信息（id + sterilizerNameCode）", required = true) @RequestBody ProduceBatch po) {
         return ResponseResult.success(produceBatchService.updateSterilizerNameCode(po));
     }
+
+    @ApiOperation("作废批次：真删批次及其托盘、货物、关联目的地记录")
+    @PostMapping("/invalidate")
+    public ResponseResult<Integer> invalidate(
+            @ApiParam(value = "批次信息（需包含 id）", required = true) @RequestBody ProduceBatch po) {
+        return ResponseResult.success(produceBatchService.invalidateBatch(po));
+    }
 }

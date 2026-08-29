@@ -22,4 +22,9 @@
         ORDER BY id DESC
     </select>
 
+    <!-- 真删：按批次ID删除其所有目的地设置记录（作废批次用） -->
+    <delete id="deleteByBatchId">
+        DELETE FROM dbo.produce_batch_destination WHERE batch_id = #{batchId}
+    </delete>
+
 </mapper>

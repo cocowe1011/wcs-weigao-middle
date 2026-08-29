@@ -62,4 +62,9 @@ public interface ProducePalletMapper extends BaseMapper<ProducePallet> {
      * 真删：按ID删除托盘
      */
     int deletePalletById(@Param("palletId") Long palletId);
+
+    /**
+     * 真删：按批次ID删除其下所有托盘（作废批次用）
+     */
+    int deleteByBatchId(@Param("batchId") Long batchId);
 }

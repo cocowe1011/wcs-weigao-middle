@@ -112,4 +112,9 @@
         DELETE FROM dbo.produce_pallet WHERE id = #{palletId}
     </delete>
 
+    <!-- 真删：按批次ID删除其下所有托盘（作废批次用） -->
+    <delete id="deleteByBatchId">
+        DELETE FROM dbo.produce_pallet WHERE batch_id = #{batchId}
+    </delete>
+
 </mapper>

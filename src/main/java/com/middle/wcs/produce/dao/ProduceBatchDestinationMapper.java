@@ -18,4 +18,12 @@ public interface ProduceBatchDestinationMapper extends BaseMapper<ProduceBatchDe
      * @return 激活的目的地记录，不存在则返回 null
      */
     ProduceBatchDestination selectActiveByBatchId(@Param("batchId") Long batchId);
+
+    /**
+     * 真删：按批次ID删除其所有目的地设置记录（作废批次用）
+     *
+     * @param batchId 批次ID
+     * @return 删除行数
+     */
+    int deleteByBatchId(@Param("batchId") Long batchId);
 }

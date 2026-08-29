@@ -43,4 +43,9 @@ public interface ProduceGoodsMapper extends BaseMapper<ProduceGoods> {
      * 真删：按托盘ID删除其下所有货物
      */
     int deleteByPalletId(@Param("palletId") Long palletId);
+
+    /**
+     * 真删：按批次ID删除其下所有货物（作废批次用）
+     */
+    int deleteByBatchId(@Param("batchId") Long batchId);
 }

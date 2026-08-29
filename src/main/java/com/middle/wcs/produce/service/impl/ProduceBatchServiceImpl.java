@@ -17,6 +17,7 @@ import com.middle.wcs.produce.entity.po.ProducePallet;
 import com.middle.wcs.produce.service.ProduceBatchService;
 import com.middle.wcs.hander.BusinessException;
 import com.middle.wcs.hander.CommonErrorCode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import static com.github.pagehelper.page.PageMethod.startPage;
 /**
  * 生产批次 Service 实现
  */
+@Slf4j
 @Service
 public class ProduceBatchServiceImpl implements ProduceBatchService {
 
@@ -359,5 +361,32 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
         String code = po.getSterilizerNameCode() != null ? po.getSterilizerNameCode().trim() : "";
         batch.setSterilizerNameCode(code);
         return produceBatchMapper.updateById(batch);
+    }
+
+    @Override
+    @Transactional
+    public Integer invalidateBatch(ProduceBatch po) {
+        if (po == null || po.getId() == null) {
+            throw new RuntimeException("批次ID不能为空");
+        }
+        Long batchId = po.getId();
+        ProduceBatch batch = produceBatchMapper.selectById(batchId);
+        if (batch == null) {
+            throw new RuntimeException("批次不存在: " + batchId);
+        }
+        // 留痕：删除前记录批次快照信息，便于事后追溯
+        log.info("作废批次开始: batchId={}, batchNo={}, sterilizationOrderNo={}, status={}",
+                batchId, batch.getBatchNo(), batch.getSterilizationOrderNo(), batch.getStatus());
+
+        // 真删：先删下层货物、托盘和目的地流水，最后删批次本身，保证不留孤儿数据
+        int goodsRows = produceGoodsMapper.deleteByBatchId(batchId);
+        int palletRows = producePalletMapper.deleteByBatchId(batchId);
+        int destRows = produceBatchDestinationMapper.deleteByBatchId(batchId);
+        int batchRows = produceBatchMapper.deleteById(batchId);
+
+        // 留痕：删除后记录各表实际删除行数，便于核对是否删干净
+        log.info("作废批次完成: batchId={}, 删除货物{}条, 删除托盘{}条, 删除目的地{}条, 删除批次{}条",
+                batchId, goodsRows, palletRows, destRows, batchRows);
+        return batchRows;
     }
 }

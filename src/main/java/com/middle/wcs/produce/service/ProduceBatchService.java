@@ -108,4 +108,12 @@ public interface ProduceBatchService {
      * @return 影响行数
      */
     Integer updateSterilizerNameCode(ProduceBatch po);
+
+    /**
+     * 作废批次：真删该批次的批次记录、托盘、货物及关联的目的地设置记录，事务保证原子性。
+     *
+     * @param po 批次信息（需包含 id）
+     * @return 批次表删除行数（1 表示成功）
+     */
+    Integer invalidateBatch(ProduceBatch po);
 }
