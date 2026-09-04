@@ -11,6 +11,7 @@ import com.middle.wcs.produce.entity.po.ProduceGoods;
 import com.middle.wcs.produce.entity.po.ProducePallet;
 import com.middle.wcs.produce.service.ProduceBatchService;
 import com.middle.wcs.produce.service.ProducePalletService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ import java.util.Set;
 /**
  * 生产托盘 Service 实现
  */
+@Slf4j
 @Service
 public class ProducePalletServiceImpl implements ProducePalletService {
 
@@ -182,6 +184,8 @@ public class ProducePalletServiceImpl implements ProducePalletService {
         // 2. 根据条码匹配批次中尚未分配虚拟ID的托盘
         ProducePallet matchedPallet = producePalletMapper.selectUnassignedByBarcodes(batchId, barcodes);
         if (matchedPallet == null) {
+            // 留痕：仅记条码数量，不打印条码明细，避免日志过大
+            log.info("分配虚拟ID未匹配到托盘: batchId={}, 条码数={}", batchId, barcodes.size());
             return null;
         }
 
@@ -193,9 +197,15 @@ public class ProducePalletServiceImpl implements ProducePalletService {
         producePalletMapper.assignVirtualId(matchedPallet.getId(), virtualIdStr);
 
         // 5. 更新所有匹配条码的扫码状态（01002已扫码）
+        int scannedRows = 0;
         for (String uid : barcodes) {
-            produceGoodsMapper.markScanned(uid, "01002", batchId);
+            scannedRows += produceGoodsMapper.markScanned(uid, "01002", batchId);
         }
+
+        // 留痕：一次分配一条汇总日志，scannedRows 与条码数不等时说明有条码不属于该批次/托盘
+        log.info("分配虚拟ID成功: batchId={}, palletId={}, palletNo={}, virtualId={}, 条码数={}, 标记已扫{}条",
+                batchId, matchedPallet.getId(), matchedPallet.getPalletNo(), virtualIdStr,
+                barcodes.size(), scannedRows);
 
         // 6. 回查更新后的托盘
         ProducePallet updated = producePalletMapper.selectById(matchedPallet.getId());
@@ -299,6 +309,36 @@ public class ProducePalletServiceImpl implements ProducePalletService {
         // 6. 回查
         ProducePallet updated = producePalletMapper.selectById(palletId);
         return PalletDetailDTO.from(updated, goodsList);
+    }
+
+    @Override
+    @Transactional
+    public PalletDetailDTO resetPallet(ProducePallet po) {
+        Long palletId = po == null ? null : po.getId();
+        if (palletId == null) {
+            throw new RuntimeException("托盘ID不能为空");
+        }
+        ProducePallet pallet = producePalletMapper.selectById(palletId);
+        if (pallet == null || "1".equals(pallet.getInvalidFlag())) {
+            throw new RuntimeException("托盘不存在: " + palletId);
+        }
+
+        // 1. 托盘恢复建档初始状态：清空虚拟ID、上货信息、扫码汇总与目的地发送信息
+        producePalletMapper.resetToArchived(palletId);
+        // 2. 托盘下货物扫码信息回到未扫，uid、品名等建档数据保留
+        int goodsRows = produceGoodsMapper.resetScanByPalletId(palletId);
+        // 3. 批次若已自动完结则回退为生产中并恢复激活目的地，保证不影响下一次上货
+        boolean reopened = produceBatchService.reopenIfFinished(pallet.getBatchId());
+
+        // 留痕：记录重置前的关键现场信息，便于事后追溯
+        log.info("托盘恢复建档状态: palletId={}, palletNo={}, batchId={}, 原虚拟ID={}, 原发送状态={}, 重置货物{}条, 批次回退={}",
+                palletId, pallet.getPalletNo(), pallet.getBatchId(), pallet.getVirtualId(),
+                pallet.getSendStatus(), goodsRows, reopened);
+
+        // 4. 回查恢复后的托盘与货物
+        ProducePallet updated = producePalletMapper.selectById(palletId);
+        List<ProduceGoods> goods = produceGoodsMapper.selectByPalletId(palletId);
+        return PalletDetailDTO.from(updated, goods);
     }
 
     @Override

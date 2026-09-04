@@ -58,6 +58,12 @@ public interface ProducePalletMapper extends BaseMapper<ProducePallet> {
      * 用于生成当日不重复的下一个虚拟ID
      */
     List<Integer> selectUsedVirtualIdsToday();
+
+    /**
+     * 恢复为刚建档时的状态：清空虚拟ID、上货状态/时间、扫码汇总状态、目的地发送信息
+     */
+    int resetToArchived(@Param("palletId") Long palletId);
+
     /**
      * 真删：按ID删除托盘
      */

@@ -31,4 +31,12 @@ public interface ProduceBatchMapper extends BaseMapper<ProduceBatch> {
      * 历史批次列表（配合 PageHelper 分页，SQL 本身不分页）
      */
     List<ProduceBatch> selectListByPage(BatchHistoryQueryDTO query);
+
+    /**
+     * 重新开线：将已完成（status=3）的批次回退为生产中（status=2）并清空完成时间
+     *
+     * @param batchId 批次ID
+     * @return 影响行数（0 表示批次不处于完成态）
+     */
+    int reopen(@Param("batchId") Long batchId);
 }

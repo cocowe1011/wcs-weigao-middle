@@ -71,6 +71,13 @@ public class ProducePalletController {
         return ResponseResult.success(producePalletService.resendDestination(dto));
     }
 
+    @ApiOperation("恢复建档状态：上货区删除托盘时，把托盘及其货物重置为刚建档时的状态（不删数据，不影响下一次上货）")
+    @PostMapping("/reset")
+    public ResponseResult<PalletDetailDTO> resetPallet(
+            @ApiParam(value = "托盘信息", required = true) @RequestBody ProducePallet po) {
+        return ResponseResult.success(producePalletService.resetPallet(po));
+    }
+
     @ApiOperation("真删托盘：删除托盘及其下属所有货物")
     @PostMapping("/delete")
     public ResponseResult<Integer> deletePallet(

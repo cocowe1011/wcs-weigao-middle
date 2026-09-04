@@ -84,6 +84,16 @@
           </if>
     </update>
 
+    <!-- 恢复为刚建档时的状态：清空托盘下所有货物的扫码状态/位置/时间，保留 uid、品名等建档数据 -->
+    <update id="resetScanByPalletId">
+        UPDATE dbo.produce_goods
+        SET scan_status   = '0',
+            scan_location = NULL,
+            scan_time     = NULL
+        WHERE pallet_id    = #{palletId}
+          AND invalid_flag = '0'
+    </update>
+
     <!-- 真删：按托盘ID删除其下所有货物 -->
     <delete id="deleteByPalletId">
         DELETE FROM dbo.produce_goods WHERE pallet_id = #{palletId}

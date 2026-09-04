@@ -107,6 +107,20 @@
           AND CONVERT(date, load_time) = CONVERT(date, GETDATE())
     </select>
 
+    <!-- 恢复为刚建档时的状态：清空虚拟ID/上货/扫码汇总/目的地发送信息，保证同一托盘可重新上货 -->
+    <update id="resetToArchived">
+        UPDATE dbo.produce_pallet
+        SET virtual_id            = NULL,
+            tray_status           = '0',
+            load_status           = '0',
+            load_time             = NULL,
+            send_destination_code = NULL,
+            send_status           = '0',
+            send_time             = NULL
+        WHERE id = #{palletId}
+          AND invalid_flag = '0'
+    </update>
+
     <!-- 真删：按ID删除托盘 -->
     <delete id="deletePalletById">
         DELETE FROM dbo.produce_pallet WHERE id = #{palletId}

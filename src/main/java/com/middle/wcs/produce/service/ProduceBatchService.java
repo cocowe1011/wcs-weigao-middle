@@ -86,6 +86,16 @@ public interface ProduceBatchService {
     boolean tryFinishIfAllSent(Long batchId);
 
     /**
+     * 批次重新开线：已完成（status=3）的批次回退为生产中（status=2）并清空完成时间，
+     * 同时恢复完结时被取消的激活目的地。
+     * 用于托盘从上货区删除并恢复建档状态后，保证不影响下一次上货。
+     *
+     * @param batchId 批次ID
+     * @return true 表示本次执行了回退，false 表示批次不存在或不处于完成态
+     */
+    boolean reopenIfFinished(Long batchId);
+
+    /**
      * 向指定批次添加一个空托盘，托盘号自动生成
      *
      * @param po 托盘信息（需包含 batchId）

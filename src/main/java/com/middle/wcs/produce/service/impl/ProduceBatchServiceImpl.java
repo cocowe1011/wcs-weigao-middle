@@ -293,6 +293,24 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
 
     @Override
     @Transactional
+    public boolean reopenIfFinished(Long batchId) {
+        if (batchId == null) {
+            return false;
+        }
+        ProduceBatch batch = produceBatchMapper.selectById(batchId);
+        if (batch == null || !"3".equals(batch.getStatus())) {
+            return false;
+        }
+        // 完成态回退为生产中，并恢复完结时被取消的激活目的地，保证重新上货后仍能发送目的地
+        int rows = produceBatchMapper.reopen(batchId);
+        int destRows = produceBatchDestinationMapper.reactivateLatestCancelled(batchId);
+        log.info("批次重新开线: batchId={}, batchNo={}, 回退行数={}, 恢复目的地行数={}",
+                batchId, batch.getBatchNo(), rows, destRows);
+        return rows > 0;
+    }
+
+    @Override
+    @Transactional
     public PalletDetailDTO addPallet(ProducePallet po) {
         Long batchId = po.getBatchId();
         ProduceBatch batch = produceBatchMapper.selectById(batchId);

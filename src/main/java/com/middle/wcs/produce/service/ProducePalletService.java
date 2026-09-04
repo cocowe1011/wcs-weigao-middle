@@ -75,6 +75,17 @@ public interface ProducePalletService {
     PalletDetailDTO resendDestination(SendDestinationDTO dto);
 
     /**
+     * 恢复建档状态：把托盘及其货物同步重置为刚建档时的状态（不删数据）
+     * 1. 托盘：清空虚拟ID、上货状态/时间、扫码汇总状态、目的地发送信息
+     * 2. 货物：扫码状态回到未扫，清空扫码位置与扫码时间，uid 等建档数据保留
+     * 3. 批次：若已自动完结则回退为生产中并恢复激活目的地，保证不影响下一次上货
+     *
+     * @param po 托盘信息（需包含 id）
+     * @return 恢复后的托盘详情（含货物列表）
+     */
+    PalletDetailDTO resetPallet(ProducePallet po);
+
+    /**
      * 真删托盘：删除托盘及其下属所有货物
      *
      * @param po 托盘信息（需包含 id）

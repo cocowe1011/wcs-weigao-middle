@@ -52,4 +52,14 @@
         ORDER BY b.created_at DESC
     </select>
 
+    <!-- 重新开线：已完成批次回退为生产中，清空完成时间（updateById 无法写入 null，故单独维护） -->
+    <update id="reopen">
+        UPDATE dbo.produce_batch
+        SET status      = '2',
+            finish_time = NULL
+        WHERE id           = #{batchId}
+          AND status       = '3'
+          AND invalid_flag = '0'
+    </update>
+
 </mapper>
