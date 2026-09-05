@@ -77,6 +77,8 @@ CREATE TABLE dbo.produce_batch (
     created_at    DATETIME2      NOT NULL DEFAULT SYSDATETIME()
 );
 EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'生产批次表', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'produce_batch';
+-- produce_batch 索引：status 支撑高频轮询的执行中批次查询（selectCurrentExecuting / countExecutingExcludeBatch 按 status 过滤）
+CREATE INDEX IX_produce_batch_status ON dbo.produce_batch(status);
 
 -- produce_pallet 托盘表（含上货、发送目的地全部字段）
 CREATE TABLE dbo.produce_pallet (
@@ -94,6 +96,10 @@ CREATE TABLE dbo.produce_pallet (
     created_at              DATETIME2      NOT NULL DEFAULT SYSDATETIME()
 );
 EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'生产托盘表', @level0type=N'SCHEMA', @level0name=N'dbo', @level1type=N'TABLE', @level1name=N'produce_pallet';
+-- produce_pallet 索引：batch_id 支撑按批次查托盘（selectByBatchId / selectFirstUnsentByBatchId / selectSentByBatchIdDesc）
+CREATE INDEX IX_produce_pallet_batch_id ON dbo.produce_pallet(batch_id);
+-- load_time 支撑 selectUsedVirtualIdsToday 按当天范围查（改写为 SARGable 后走此索引，避免每次上货全表扫描）
+CREATE INDEX IX_produce_pallet_load_time ON dbo.produce_pallet(load_time);
 
 -- produce_goods 货物表
 CREATE TABLE dbo.produce_goods (
@@ -119,6 +125,8 @@ EXEC sys.sp_addextendedproperty @name=N'MS_Description',
 -- 索引
 CREATE INDEX IX_produce_goods_batch_id  ON dbo.produce_goods(batch_id);
 CREATE INDEX IX_produce_goods_pallet_id ON dbo.produce_goods(pallet_id);
+-- uid 是扫码匹配核心字段（selectUnassignedByBarcodes 子查询、selectByUids 归因、selectByUid 都按 uid 过滤），建索引避免全表扫描货物大表
+CREATE INDEX IX_produce_goods_uid       ON dbo.produce_goods(uid);
 
 -- =============================================
 -- 批次目的地设置流水表（produce_batch_destination）
