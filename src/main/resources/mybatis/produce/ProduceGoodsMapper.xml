@@ -41,6 +41,17 @@
         ORDER BY id ASC
     </select>
 
+    <!-- 根据 uid 列表批量查询货物：不过滤 batch_id / invalid_flag，用于匹配失败时逐条码归因，走 uid 索引 -->
+    <select id="selectByUids" resultMap="ProduceGoodsMap">
+        SELECT id, batch_id, pallet_id, uid, udi, product_name, spec, product_code, production_batch_number,
+               production_date, remark, scan_status, scan_time, scan_location, invalid_flag, created_at
+        FROM dbo.produce_goods
+        WHERE uid IN
+        <foreach collection="uids" item="uid" open="(" separator="," close=")">
+            #{uid}
+        </foreach>
+    </select>
+
     <select id="selectByPalletIds" resultMap="ProduceGoodsMap">
         SELECT id, batch_id, pallet_id, uid, udi, product_name, spec, product_code, production_batch_number,
                production_date, remark, scan_status, scan_time, scan_location, invalid_flag, created_at

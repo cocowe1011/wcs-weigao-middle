@@ -25,6 +25,13 @@ public interface ProduceGoodsMapper extends BaseMapper<ProduceGoods> {
     List<ProduceGoods> selectByPalletId(@Param("palletId") Long palletId);
 
     /**
+     * 根据 uid 列表批量查询货物（走 uid 索引，一次 IN 查询）。
+     * 不过滤 batch_id / invalid_flag，返回完整现场，仅用于匹配失败时逐条码归因，
+     * 结果条数由入参 uid 数量决定，不受货物大表体量影响。
+     */
+    List<ProduceGoods> selectByUids(@Param("uids") List<String> uids);
+
+    /**
      * 根据多个托盘ID批量查询货物列表（避免循环内单条查询）
      */
     List<ProduceGoods> selectByPalletIds(@Param("palletIds") List<Long> palletIds);

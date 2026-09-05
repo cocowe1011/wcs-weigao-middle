@@ -81,30 +81,43 @@
         ORDER BY send_time DESC
     </select>
 
-    <!-- 根据条码列表匹配批次中尚未分配虚拟ID的托盘：只要任一货物的uid在列表中即命中 -->
+    <!-- 根据条码列表匹配批次中尚未分配虚拟ID的托盘：
+         收紧为“提交条码必须全部归属同一个合格托盘”——子查询按 pallet_id 分组，
+         仅保留命中去重条码数 = barcodeCount 的托盘（即包含全部提交条码）；
+         错扫(不属本批次)/混托(分属多托盘)都会使任一托盘命中数 < barcodeCount 而落空。
+         允许漏扫：托盘只需包含全部提交条码，不要求扫全其所有货物。 -->
     <select id="selectUnassignedByBarcodes" resultMap="ProducePalletMap">
         SELECT TOP 1 p.id, p.batch_id, p.pallet_no, p.tray_status, p.virtual_id, p.load_status, p.load_time,
                p.send_destination_code, p.send_status, p.send_time, p.invalid_flag, p.created_at
         FROM dbo.produce_pallet p
-        INNER JOIN dbo.produce_goods g ON g.pallet_id = p.id AND g.invalid_flag = '0'
-        WHERE p.batch_id    = #{batchId}
-          AND p.virtual_id  IS NULL
+        WHERE p.batch_id     = #{batchId}
+          AND p.virtual_id   IS NULL
           AND p.invalid_flag = '0'
-          AND g.uid IN
-        <foreach collection="barcodes" item="uid" open="(" separator="," close=")">
-            #{uid}
-        </foreach>
+          AND p.id IN (
+              SELECT g.pallet_id
+              FROM dbo.produce_goods g
+              WHERE g.invalid_flag = '0'
+                AND g.uid IN
+              <foreach collection="barcodes" item="uid" open="(" separator="," close=")">
+                  #{uid}
+              </foreach>
+              GROUP BY g.pallet_id
+              HAVING COUNT(DISTINCT g.uid) = #{barcodeCount}
+          )
         ORDER BY p.id ASC
     </select>
 
-    <!-- 查询当日已分配的虚拟ID（10000-29999），按 load_time 当天，用于当日不重复递增 -->
+    <!-- 查询当日已分配的虚拟ID（10000-29999），按 load_time 当天，用于当日不重复递增。
+         load_time 用 [今天00:00, 次日00:00) 范围（SARGable，走 IX_produce_pallet_load_time），
+         避免原 CONVERT(date, load_time) 包裹列导致索引失效、每次上货全表扫描托盘表。 -->
     <select id="selectUsedVirtualIdsToday" resultType="java.lang.Integer">
         SELECT TRY_CAST(virtual_id AS INT)
         FROM dbo.produce_pallet
-        WHERE virtual_id IS NOT NULL
-          AND TRY_CAST(virtual_id AS INT) BETWEEN 10000 AND 29999
+        WHERE load_time &gt;= CAST(GETDATE() AS DATE)
+          AND load_time &lt;  DATEADD(DAY, 1, CAST(GETDATE() AS DATE))
+          AND virtual_id IS NOT NULL
           AND invalid_flag = '0'
-          AND CONVERT(date, load_time) = CONVERT(date, GETDATE())
+          AND TRY_CAST(virtual_id AS INT) BETWEEN 10000 AND 29999
     </select>
 
     <!-- 恢复为刚建档时的状态：清空虚拟ID/上货/扫码汇总/目的地发送信息，保证同一托盘可重新上货 -->

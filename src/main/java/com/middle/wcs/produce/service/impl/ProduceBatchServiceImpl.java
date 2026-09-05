@@ -24,7 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.github.pagehelper.page.PageMethod.startPage;
 
@@ -171,12 +173,39 @@ public class ProduceBatchServiceImpl implements ProduceBatchService {
      */
     private BatchDetailDTO buildBatchDetail(ProduceBatch batch) {
         List<ProducePallet> pallets = producePalletMapper.selectByBatchId(batch.getId());
-        List<PalletDetailDTO> palletDTOs = new ArrayList<>();
-        for (ProducePallet pallet : pallets) {
-            List<ProduceGoods> goodsList = produceGoodsMapper.selectByPalletId(pallet.getId());
-            palletDTOs.add(PalletDetailDTO.from(pallet, goodsList));
+        return BatchDetailDTO.of(batch, buildPalletDetails(pallets));
+    }
+
+    /**
+     * 批量组装托盘详情：一次 selectByPalletIds 查出所有托盘的货物再按 palletId 分组，
+     * 避免逐托盘 selectByPalletId 的 N+1（getCurrentExecuting 是多端 2~5 秒轮询热路径）。
+     */
+    private List<PalletDetailDTO> buildPalletDetails(List<ProducePallet> pallets) {
+        List<PalletDetailDTO> result = new ArrayList<>();
+        if (pallets == null || pallets.isEmpty()) {
+            return result;
         }
-        return BatchDetailDTO.of(batch, palletDTOs);
+        List<Long> palletIds = new ArrayList<>();
+        for (ProducePallet p : pallets) {
+            palletIds.add(p.getId());
+        }
+        List<ProduceGoods> allGoods = produceGoodsMapper.selectByPalletIds(palletIds);
+        Map<Long, List<ProduceGoods>> goodsByPallet = new HashMap<>();
+        if (allGoods != null) {
+            for (ProduceGoods g : allGoods) {
+                List<ProduceGoods> list = goodsByPallet.get(g.getPalletId());
+                if (list == null) {
+                    list = new ArrayList<>();
+                    goodsByPallet.put(g.getPalletId(), list);
+                }
+                list.add(g);
+            }
+        }
+        for (ProducePallet p : pallets) {
+            List<ProduceGoods> goods = goodsByPallet.get(p.getId());
+            result.add(PalletDetailDTO.from(p, goods == null ? new ArrayList<>() : goods));
+        }
+        return result;
     }
 
     @Override

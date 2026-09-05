@@ -43,13 +43,15 @@ public interface ProducePalletService {
 
     /**
      * 根据扫描条码匹配托盘并分配虚拟ID（原子操作）
-     * 1. 在指定批次的托盘中，查找任一货物的uid存在于barcodes中的、且尚未分配虚拟ID的托盘
+     * 1. 收紧匹配：提交条码必须“全部”归属当前批次同一个尚未分配虚拟ID的托盘才命中；
+     *    有任一条码不属于该托盘（错扫到别批次/混托）则不匹配、拒绝上货（允许漏扫，不要求扫全托盘所有货物）
      * 2. 匹配成功：按当日已分配虚拟ID递增生成（10000-29999，当日不重复，次日从10000重新开始），持久化到数据库
      * 3. 匹配成功后，批量更新所有barcodes对应货物的01002扫码状态（scan_status=1）
-     * 4. 匹配失败：返回null
+     * 4. 未匹配到托盘：逐条码归因（不属于当前批次/货物或托盘已作废/托盘已分配虚拟ID等），
+     *    抛 BusinessException（code=201）把详细原因带回前端展示；barcodes 为空时返回 null
      *
      * @param dto 匹配分配虚拟ID请求 DTO
-     * @return 匹配成功返回托盘详情，匹配失败返回null
+     * @return 匹配成功返回托盘详情；barcodes 为空返回 null；未匹配到托盘抛 BusinessException
      */
     PalletDetailDTO matchAndAssignVirtualId(MatchAndAssignDTO dto);
 

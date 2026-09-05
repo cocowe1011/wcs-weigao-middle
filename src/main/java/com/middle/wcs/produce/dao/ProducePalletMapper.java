@@ -48,10 +48,14 @@ public interface ProducePalletMapper extends BaseMapper<ProducePallet> {
     List<ProducePallet> selectSentByBatchIdDesc(@Param("batchId") Long batchId);
 
     /**
-     * 根据条码列表匹配批次中尚未分配虚拟ID的托盘
-     * 只要任一货物的uid在barcodes列表中即命中，返回第一个匹配的托盘
+     * 根据条码列表匹配批次中尚未分配虚拟ID的托盘。
+     * 收紧规则：提交条码必须“全部”归属同一个合格托盘（本批次 + 未作废 + 未分配虚拟ID），
+     * 即该托盘命中的去重条码数 = barcodeCount 才算命中；有任一条码不属于该托盘（错扫/混托）则不匹配。
+     * 允许漏扫：命中的托盘只需包含全部提交条码，不要求扫全托盘所有货物。
      */
-    ProducePallet selectUnassignedByBarcodes(@Param("batchId") Long batchId, @Param("barcodes") List<String> barcodes);
+    ProducePallet selectUnassignedByBarcodes(@Param("batchId") Long batchId,
+                                             @Param("barcodes") List<String> barcodes,
+                                             @Param("barcodeCount") int barcodeCount);
 
     /**
      * 查询当日已分配的虚拟ID列表（10000-29999范围内，按 load_time 当天）
